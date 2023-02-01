@@ -2,8 +2,8 @@ let integerToA;
 let aToInteger;
 
 function generateErrorCodeWords() {	
-    const message = [];
-    const payload = [];
+    let message = [];
+    let payload = [];
 
     const messageInputBox = document.getElementById('message');
     const payloadInputBox = document.getElementById('payload');
@@ -19,18 +19,17 @@ function generateErrorCodeWords() {
         payload.push(parseInt(element));
     })
 
-	const startIndex = 0;
-	const currentIndex = startIndex;
+	const currentIndex = 0;
 
-	console.log({integerToA, aToInteger})
-	currentByteAlphaExponent = integerToA.get(message[currentIndex]);
-	console.log("Convert current message byte to alpha exponent: " + message[currentIndex] + " " + currentByteAlphaExponent);
-	payload.map(num =>  {
-		return num + currentByteAlphaExponent;
+	currentMessageByteAlphaExponent = integerToA.get(message[currentIndex]);
+	console.log("Convert current message byte to alpha exponent: ", { messageByte: message[currentIndex], messageAlphaByte: currentMessageByteAlphaExponent});
+
+	payload = payload.map(currentExponent =>  {
+		const addedExponents = currentExponent + currentMessageByteAlphaExponent;
+		return aToInteger.get((addedExponents > 255 ? addedExponents % 255 : addedExponents));
 	});
-	
+	console.log("Add payload's alpha exponents with current message exponent and convert back to integer notation", {payload});
 
-	console.log({payload});
 }
 
 function generateGaloisField() {
