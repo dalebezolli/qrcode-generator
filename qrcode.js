@@ -3,7 +3,7 @@ let aToInteger;
 
 function generateErrorCodeWords() {	
     let message = [];
-    let payload = [];
+    const payload = [];
 
     const messageInputBox = document.getElementById('message');
     const payloadInputBox = document.getElementById('payload');
@@ -19,17 +19,29 @@ function generateErrorCodeWords() {
         payload.push(parseInt(element));
     })
 
-	const currentIndex = 0;
+	const dataLength = message.length;
+	console.log(dataLength);
+	for(let currentIndex = 0; currentIndex < dataLength; currentIndex++) {
+		console.log('STEP ' + (currentIndex + 1));
 
-	currentMessageByteAlphaExponent = integerToA.get(message[currentIndex]);
-	console.log("Convert current message byte to alpha exponent: ", { messageByte: message[currentIndex], messageAlphaByte: currentMessageByteAlphaExponent});
+		currentMessageByteAlphaExponent = integerToA.get(message[currentIndex]);
+		console.log("Convert current message byte to alpha exponent: ", {messageByte: message[currentIndex], messageAlphaByte: currentMessageByteAlphaExponent});
 
-	payload = payload.map(currentExponent =>  {
-		const addedExponents = currentExponent + currentMessageByteAlphaExponent;
-		return aToInteger.get((addedExponents > 255 ? addedExponents % 255 : addedExponents));
-	});
-	console.log("Add payload's alpha exponents with current message exponent and convert back to integer notation", {payload});
+		const calculatedPayload = payload.map(currentExponent =>  {
+			const addedExponents = currentExponent + currentMessageByteAlphaExponent;
+			return aToInteger.get((addedExponents > 255 ? addedExponents % 255 : addedExponents));
+		});
+		console.log("Add payload's alpha exponents with current message exponent and convert back to integer notation", {calculatedPayload});
 
+		for(let i = currentIndex, j = 0; j < calculatedPayload.length || i < dataLength; i++, j++) {
+			message[i] = message[i] ^ calculatedPayload[j];
+		}
+		console.log("XOR Message polynomial with payload: ", {message});
+	}
+
+	const errorCorrectionCodewords = message.filter(value => value != 0);
+	console.log("Error correction codewords: ", {errorCorrectionCodewords});
+	return errorCorrectionCodewords;
 }
 
 function generateGaloisField() {
