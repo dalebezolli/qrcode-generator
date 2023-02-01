@@ -1,31 +1,26 @@
 let integerToA;
 let aToInteger;
 
-function generateErrorCodeWords() {	
-    let message = [];
-    const payload = [];
-
+function generateQRCode() {
     const messageInputBox = document.getElementById('message');
     const payloadInputBox = document.getElementById('payload');
 
-    const messageData = messageInputBox.value.split(', ');
-    const payloadData = payloadInputBox.value.split(', ');
+    const message = messageInputBox.value.split(', ').map(element => parseInt(element));
+    const payload = payloadInputBox.value.split(', ').map(element => parseInt(element));
 
-	messageData.forEach(element => {
-		message.push(parseInt(element));
-	})
+	generateErrorCodeWords(message, payload);
+}
 
-    payloadData.forEach(element => {
-        payload.push(parseInt(element));
-    })
+function generateErrorCodeWords(message, payload) {	
+    let messageData = [...message];
+	const messageDataLength = message.length;
+	let errorCorrectionCodewords;
 
-	const dataLength = message.length;
-	console.log(dataLength);
-	for(let currentIndex = 0; currentIndex < dataLength; currentIndex++) {
-		console.log('STEP ' + (currentIndex + 1));
+	for(let currentIndex = 0; currentIndex < messageDataLength; currentIndex++) {
+		console.log('ERROR CORRECTION CODEWORD GENERATION STEP ' + (currentIndex + 1));
 
-		currentMessageByteAlphaExponent = integerToA.get(message[currentIndex]);
-		console.log("Convert current message byte to alpha exponent: ", {messageByte: message[currentIndex], messageAlphaByte: currentMessageByteAlphaExponent});
+		const currentMessageByteAlphaExponent = integerToA.get(messageData[currentIndex]);
+		console.log("Convert current message byte to alpha exponent: ", {messageByte: messageData[currentIndex], messageAlphaByte: currentMessageByteAlphaExponent});
 
 		const calculatedPayload = payload.map(currentExponent =>  {
 			const addedExponents = currentExponent + currentMessageByteAlphaExponent;
@@ -33,13 +28,13 @@ function generateErrorCodeWords() {
 		});
 		console.log("Add payload's alpha exponents with current message exponent and convert back to integer notation", {calculatedPayload});
 
-		for(let i = currentIndex, j = 0; j < calculatedPayload.length || i < dataLength; i++, j++) {
-			message[i] = message[i] ^ calculatedPayload[j];
+		for(let i = currentIndex, j = 0; j < calculatedPayload.length || i < messageDataLength; i++, j++) {
+			messageData[i] = messageData[i] ^ calculatedPayload[j];
 		}
 		console.log("XOR Message polynomial with payload: ", {message});
 	}
 
-	const errorCorrectionCodewords = message.filter(value => value != 0);
+	errorCorrectionCodewords = messageData.filter(value => value != 0);
 	console.log("Error correction codewords: ", {errorCorrectionCodewords});
 	return errorCorrectionCodewords;
 }
