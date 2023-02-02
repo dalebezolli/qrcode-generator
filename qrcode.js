@@ -36,7 +36,6 @@ function generateQRCode() {
 	let display = qrCodeSvg.innerHTML;
 	for(let i = 0; i < qrCodeSize; i++) {
 		for(let j = 0; j < qrCodeSize; j++) {
-			// Finder patterns
 			if(i < 7 && j < 7 || i > qrCodeSize - 8 && j < 7 || i < 7 && j > qrCodeSize - 8) {
 				let finderStartX = (i < 7) ? 0 : qrCodeSize - 7;
 				let finderStartY = (j < 7) ? 0 : qrCodeSize - 7;
@@ -51,7 +50,19 @@ function generateQRCode() {
 				}
 
 				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${currentColor}" shape-rendering="crispEdges"/>`;
-			}
+			} else if((j === 7 && (i < 8 || i > qrCodeSize - 9) || j === qrCodeSize - 8 && i < 8) || (i === 7 && (j < 8 || j > qrCodeSize - 9) || i === qrCodeSize - 8 && j < 8)) {
+				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#ffffff" shape-rendering="crispEdges"/>`;
+			} else if(j === 6 && (i > 7 && i < qrCodeSize - 8) || i === 6 && (j > 7 && j < qrCodeSize - 8)) {
+				const location = (j > i) ? j : i;
+				const color = (location % 2 === 0) ? '#000000' : '#ffffff';
+				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${color}"/>`;
+			} else if(i === 8 && j === version*4 + 9) {
+				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#000000"/>`;
+			} else if(j === 8 && (i < 8 && i != 6 || i > qrCodeSize - 9)) {
+				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#0000ff"/>`;
+			} else if(i === 8 && (j < 9 && j !== 6 || j > qrCodeSize - 8)) {
+				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#00ff00"/>`;
+			}		
 		}
 	}
 	qrCodeSvg.innerHTML = display;
@@ -238,8 +249,4 @@ function getVersionInformation(version) {
 function toBinary(number, bits) {
 	const binaryRepresentation = number.toString(2);
 	return '0'.repeat(bits - binaryRepresentation.length) + binaryRepresentation;
-}
-
-function drawRect(size, position) {
-
 }
