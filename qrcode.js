@@ -3,11 +3,14 @@ function generateQRCode() {
 	const [aToInteger, integerToA] = generateGaloisField();
 
     const messageInputBox = document.getElementById('message');
+    const versionInputBox = document.getElementById('version');
+    const errorCorrectionLevelInputBox = document.getElementById('errorCorrectionLevel');
 
 	const data = messageInputBox.value;
-	const version = 1;
+	const version = parseInt(versionInputBox.value);
+	const errorCorrectionLevel = errorCorrectionLevelInputBox.value;
 	const mode = '0010';
-	const errorCorrectionLevel = 'M';
+	console.log(`GENERATE QR CODE v${version} level-${errorCorrectionLevel} mode-${mode}`);
 
     const message = encodeData(data, mode, version, errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
 	const errorCodeWords = generateErrorCodeWords(message, version, errorCorrectionLevel, [aToInteger, integerToA]);
