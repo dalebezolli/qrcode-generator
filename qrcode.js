@@ -15,17 +15,19 @@ function generateQRCode() {
     const message = encodeData(data, mode, version, errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
 	const errorCodeWords = generateErrorCodeWords(message, version, errorCorrectionLevel, [aToInteger, integerToA]);
 
-	console.log("" + message.map(element => {
-		string = element.toString(2);
-		const leading0s = 8 - string.length;
-		return "0".repeat(leading0s) + string;
-	}));
+	const messageWithErrorCodeWords = 
+		message.map(element => {
+			string = element.toString(2);
+			const leading0s = 8 - string.length;
+			return "0".repeat(leading0s) + string;
+		}).join('') +
+		errorCodeWords.map(element => {
+			string = element.toString(2);
+			const leading0s = 8 - string.length;
+			return "0".repeat(leading0s) + string;
+		}).join('');
 
-	console.log("" + errorCodeWords.map(element => {
-		string = element.toString(2);
-		const leading0s = 8 - string.length;
-		return "0".repeat(leading0s) + string;
-	}));
+	console.log(messageWithErrorCodeWords);
 }
 
 function encodeData(data, mode, version, errorCorrectionLevel) {
