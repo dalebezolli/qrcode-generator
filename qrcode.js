@@ -5,6 +5,7 @@ function generateQRCode() {
     const messageInputBox = document.getElementById('message');
     const versionInputBox = document.getElementById('version');
     const errorCorrectionLevelInputBox = document.getElementById('errorCorrectionLevel');
+	const qrCodeSvg = document.getElementById('qrcode');
 
 	const data = messageInputBox.value;
 	const version = parseInt(versionInputBox.value);
@@ -28,6 +29,33 @@ function generateQRCode() {
 		}).join('');
 
 	console.log(messageWithErrorCodeWords);
+
+	const qrCodeSize = (version * 4) + 17;
+	qrCodeSvg.setAttribute('viewBox', `0 0 ${qrCodeSize * 8} ${qrCodeSize * 8}`);
+
+	let display = qrCodeSvg.innerHTML;
+	for(let i = 0; i < qrCodeSize; i++) {
+		for(let j = 0; j < qrCodeSize; j++) {
+			// Finder patterns
+			if(i < 7 && j < 7 || i > qrCodeSize - 8 && j < 7 || i < 7 && j > qrCodeSize - 8) {
+				let finderStartX = (i < 7) ? 0 : qrCodeSize - 7;
+				let finderStartY = (j < 7) ? 0 : qrCodeSize - 7;
+
+				let currentColor = '#ffffff';
+				if(i === finderStartX || i === finderStartX + 6 || j === finderStartY || j === finderStartY + 6) {
+					currentColor = '#000000';
+				}
+
+				if(i > finderStartX + 1 && i < finderStartX + 5 && j > finderStartY + 1 && j < finderStartY + 5) {
+					currentColor = '#000000';
+				}
+
+				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${currentColor}" shape-rendering="crispEdges"/>`;
+			}
+		}
+	}
+	qrCodeSvg.innerHTML = display;
+
 }
 
 function encodeData(data, mode, version, errorCorrectionLevel) {
@@ -210,4 +238,8 @@ function getVersionInformation(version) {
 function toBinary(number, bits) {
 	const binaryRepresentation = number.toString(2);
 	return '0'.repeat(bits - binaryRepresentation.length) + binaryRepresentation;
+}
+
+function drawRect(size, position) {
+
 }
