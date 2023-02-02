@@ -33,7 +33,7 @@ function generateQRCode() {
 	const qrCodeSize = (version * 4) + 17;
 	qrCodeSvg.setAttribute('viewBox', `0 0 ${qrCodeSize * 8} ${qrCodeSize * 8}`);
 
-	let display = qrCodeSvg.innerHTML;
+	let display = '<rect width="100%" height="100%" fill="#a0a0a0" shape-rendering="crispEdges"/>';
 	for(let i = 0; i < qrCodeSize; i++) {
 		for(let j = 0; j < qrCodeSize; j++) {
 			if(i < 7 && j < 7 || i > qrCodeSize - 8 && j < 7 || i < 7 && j > qrCodeSize - 8) {
@@ -65,6 +65,45 @@ function generateQRCode() {
 			}		
 		}
 	}
+	qrCodeSvg.innerHTML = display;
+
+	let messageBitPosX = qrCodeSize - 1;
+	let messageBitPosY = qrCodeSize - 1;
+	let direction = 1;
+	for(let n = 0; n < messageWithErrorCodeWords.length; n++) {
+		const currentCharacter = messageWithErrorCodeWords.charAt(n);
+		const color = (currentCharacter === '1') ? '#000000' : '#ffffff';
+
+		display += `<rect x="${messageBitPosX*8}" y="${messageBitPosY*8}" width="8" height="8" fill="${color}"/>`;
+
+		if(n % 2 === 0) {
+			messageBitPosX -= 1;
+		} else {
+			messageBitPosX += 1;
+			messageBitPosY -= direction;
+		}
+
+		if(messageBitPosY === 6) {
+			messageBitPosY -= direction;
+		}
+
+		if(document.querySelector(`rect[x='${messageBitPosX*8}'][y='${messageBitPosY*8}']`) || messageBitPosY > qrCodeSize - 1 || messageBitPosY < 0) {
+			messageBitPosX -= 2;
+			direction = (direction === 1) ? -1 : 1;
+			messageBitPosY -= direction;
+		}
+
+		if(messageBitPosX === 6) {
+			messageBitPosX--;
+		}
+	
+		if(messageBitPosX < 9 && (messageBitPosY > qrCodeSize - 9 || messageBitPosY < 8)) {
+			while(document.querySelector(`rect[x='${messageBitPosX*8}'][y='${messageBitPosY*8}']`)) {
+				messageBitPosY -= direction;
+			}
+		}
+	}
+
 	qrCodeSvg.innerHTML = display;
 
 }
