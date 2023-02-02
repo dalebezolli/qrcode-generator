@@ -1,5 +1,6 @@
 // ONLY ACCOUNTING FOR ALNUMS CURRENTLY
 function generateQRCode() {
+	const [aToInteger, integerToA] = generateGaloisField();
 
     const messageInputBox = document.getElementById('message');
     const payloadInputBox = document.getElementById('payload');
@@ -11,7 +12,7 @@ function generateQRCode() {
 
     const message = encodeData(data, mode, version, errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
     const payload = payloadInputBox.value.split(', ').map(element => parseInt(element));
-	const errorCodeWords = generateErrorCodeWords(message, payload);
+	const errorCodeWords = generateErrorCodeWords(message, payload, [aToInteger, integerToA]);
 
 	console.log("" + message.map(element => {
 		string = element.toString(2);
@@ -25,9 +26,6 @@ function generateQRCode() {
 		return "0".repeat(leading0s) + string;
 	}));
 }
-
-let integerToA;
-let aToInteger;
 
 function encodeData(data, mode, version, errorCorrectionLevel) {
 	const batchedData = [];
@@ -72,10 +70,12 @@ function encodeData(data, mode, version, errorCorrectionLevel) {
 	return encodedPaddedMessage;
 }
 
-function generateErrorCodeWords(message, payload) {	
+function generateErrorCodeWords(message, payload, galoisFields) {	
     let messageData = [...message];
 	const messageDataLength = message.length;
 	let errorCorrectionCodewords;
+
+	const [aToInteger, integerToA] = galoisFields;
 
 	for(let currentIndex = 0; currentIndex < messageDataLength; currentIndex++) {
 		console.log('ERROR CORRECTION CODEWORD GENERATION STEP ' + (currentIndex + 1));
@@ -130,8 +130,6 @@ function generateGaloisField() {
 
 	return [gfMap, inverseGfMap];
 }
-
-[aToInteger, integerToA] = generateGaloisField();
 
 const alphanumericMap = new Map([
 	['0', 0],
