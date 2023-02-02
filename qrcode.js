@@ -3,7 +3,6 @@ function generateQRCode() {
 	const [aToInteger, integerToA] = generateGaloisField();
 
     const messageInputBox = document.getElementById('message');
-    const payloadInputBox = document.getElementById('payload');
 
 	const data = messageInputBox.value;
 	const version = 1;
@@ -11,8 +10,7 @@ function generateQRCode() {
 	const errorCorrectionLevel = 'M';
 
     const message = encodeData(data, mode, version, errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
-    const payload = payloadInputBox.value.split(', ').map(element => parseInt(element));
-	const errorCodeWords = generateErrorCodeWords(message, payload, [aToInteger, integerToA]);
+	const errorCodeWords = generateErrorCodeWords(message, version, errorCorrectionLevel, [aToInteger, integerToA]);
 
 	console.log("" + message.map(element => {
 		string = element.toString(2);
@@ -31,7 +29,7 @@ function encodeData(data, mode, version, errorCorrectionLevel) {
 	const batchedData = [];
 	const characterCount = data.length;
 	let characterBitsSize;
-	let maxDataBytesLength = getVersionInformation(version)[0].capacity[errorCorrectionLevel];
+	let maxDataBytesLength = getVersionInformation(version)[0].capacity[errorCorrectionLevel].message;
 
 	if(version < 10) {
 		characterBitsSize = 9;
@@ -70,33 +68,49 @@ function encodeData(data, mode, version, errorCorrectionLevel) {
 	return encodedPaddedMessage;
 }
 
-function generateErrorCodeWords(message, payload, galoisFields) {	
+function generateErrorCodeWords(message, version, errorCorrectionLevel, galoisFields) {	
+	let errorCorrectionCodewords;
+	const errorCorrectionCodewordsLength = getVersionInformation(version)[0].capacity[errorCorrectionLevel].error;
+
     let messageData = [...message];
 	const messageDataLength = message.length;
-	let errorCorrectionCodewords;
-
 	const [aToInteger, integerToA] = galoisFields;
 
-	for(let currentIndex = 0; currentIndex < messageDataLength; currentIndex++) {
-		console.log('ERROR CORRECTION CODEWORD GENERATION STEP ' + (currentIndex + 1));
+	let payload = [0, 0];
+	for(let n = 1; n < errorCorrectionCodewordsLength; n++) {
+		const currentPolynomial = [];
+		const currentNomial = [0, n];
 
+		for(let i = 0; i < payload.length; i++) {
+			for(let j = 0; j < currentNomial.length; j++) {
+				const addedAlphaExponents = (payload[i] + currentNomial[j]) % 255;
+
+				if(currentPolynomial[i + j] === undefined) {
+					currentPolynomial[i + j] = addedAlphaExponents;
+				} else {
+					currentPolynomial[i + j] = integerToA.get(aToInteger.get(currentPolynomial[i + j]) ^ aToInteger.get(addedAlphaExponents));
+				}
+			}
+		}
+
+		payload = [...currentPolynomial];
+	}
+
+
+	for(let currentIndex = 0; currentIndex < messageDataLength; currentIndex++) {
 		const currentMessageByteAlphaExponent = integerToA.get(messageData[currentIndex]);
-		console.log("Convert current message byte to alpha exponent: ", {messageByte: messageData[currentIndex], messageAlphaByte: currentMessageByteAlphaExponent});
 
 		const calculatedPayload = payload.map(currentExponent =>  {
 			const addedExponents = currentExponent + currentMessageByteAlphaExponent;
 			return aToInteger.get((addedExponents > 255 ? addedExponents % 255 : addedExponents));
 		});
-		console.log("Add payload's alpha exponents with current message exponent and convert back to integer notation", {calculatedPayload});
 
 		for(let i = currentIndex, j = 0; j < calculatedPayload.length || i < messageDataLength; i++, j++) {
 			messageData[i] = messageData[i] ^ calculatedPayload[j];
 		}
-		console.log("XOR Message polynomial with payload: ", {message});
 	}
 
 	errorCorrectionCodewords = messageData.filter(value => value != 0);
-	console.log("Error correction codewords: ", {errorCorrectionCodewords});
 	return errorCorrectionCodewords;
 }
 
@@ -181,10 +195,8 @@ const alphanumericMap = new Map([
 
 function getVersionInformation(version) {
 	let versionInformation = new Map([
-		[1, [{mode: 'Alphanumeric', capacity: {'L': 19, 'M': 16, 'Q': 13, 'H': 9}}]],
-		[2, [{mode: 'Alphanumeric', capacity: {'L': 34, 'M': 28, 'Q': 22, 'H': 16}}]],
-		[3, [{mode: 'Alphanumeric', capacity: {'L': 55, 'M': 44, 'Q': 34, 'H': 26}}]],
-		[4, [{mode: 'Alphanumeric', capacity: {'L': 80, 'M': 64, 'Q': 48, 'H': 36}}]]
+		[1, [{mode: 'Alphanumeric', capacity: {'L': {message: 19, error: 7}, 'M': {message: 16, error: 10}, 'Q': {message: 13, error: 13}, 'H': {message: 9, error: 17}}}]],
+		[2, [{mode: 'Alphanumeric', capacity: {'L': {message: 34, error: 10}, 'M': {message: 28, error: 16}, 'Q': {message: 22, error: 22}, 'H': {message: 16, error: 28}}}]],
 	]);
 
 	return versionInformation.get(version);
