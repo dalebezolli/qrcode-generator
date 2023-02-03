@@ -194,7 +194,7 @@ function generateErrorCodeWords(message, version, errorCorrectionLevel, galoisFi
 		}
 	}
 
-	errorCorrectionCodewords = messageData.filter(value => value != 0);
+	errorCorrectionCodewords = messageData.slice(messageData.length - errorCorrectionCodewordsLength - 1, -1);
 	return errorCorrectionCodewords;
 }
 
