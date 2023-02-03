@@ -125,11 +125,12 @@ function encodeData(data, mode, version, errorCorrectionLevel) {
 	if(mode !== '0010') return;
 
 	for(let i = 0; i < data.length; i++) {
+		const character = alphanumericMap.get(data[i].toUpperCase());
 		if(i % 2 === 0 && i !== data.length - 1) {
-			batchedData[Math.floor(i / 2)] = alphanumericMap.get(data[i]) * 45;
+			batchedData[Math.floor(i / 2)] = character * 45;
 		} else {
 			const prevNum = batchedData[Math.floor(i / 2)] || 0;
-			batchedData[Math.floor(i / 2)] = prevNum + alphanumericMap.get(data[i]);
+			batchedData[Math.floor(i / 2)] = prevNum + character;
 		}
 	}
 
