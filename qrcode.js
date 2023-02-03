@@ -5,12 +5,14 @@ function generateQRCode() {
     const messageInputBox = document.getElementById('message');
     const versionInputBox = document.getElementById('version');
     const errorCorrectionLevelInputBox = document.getElementById('errorCorrectionLevel');
+    const maskPatternInputBox = document.getElementById('maskPattern');
 	const qrCodeSvg = document.getElementById('qrcode');
 
 	const data = messageInputBox.value;
 	const version = parseInt(versionInputBox.value);
 	const errorCorrectionLevel = errorCorrectionLevelInputBox.value;
 	const mode = '0010';
+	const maskPattern = parseInt(maskPatternInputBox.value);
 	console.log(`GENERATE QR CODE v${version} level-${errorCorrectionLevel} mode-${mode}`);
 
     const message = encodeData(data, mode, version, errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
@@ -59,9 +61,9 @@ function generateQRCode() {
 			} else if(i === 8 && j === version*4 + 9) {
 				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#000000"/>`;
 			} else if(j === 8 && (i < 8 && i != 6 || i > qrCodeSize - 9)) {
-				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#0000ff"/>`;
+				display += `<rect class="formatModule" x="${i*8}" y="${j*8}" width="8" height="8" fill="#0000ff"/>`;
 			} else if(i === 8 && (j < 9 && j !== 6 || j > qrCodeSize - 8)) {
-				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#00ff00"/>`;
+				display += `<rect class="formatModule" x="${i*8}" y="${j*8}" width="8" height="8" fill="#0000ff"/>`;
 			}		
 		}
 	}
@@ -74,7 +76,7 @@ function generateQRCode() {
 		const currentCharacter = messageWithErrorCodeWords.charAt(n);
 		const color = (currentCharacter === '1') ? '#000000' : '#ffffff';
 
-		display += `<rect x="${messageBitPosX*8}" y="${messageBitPosY*8}" width="8" height="8" fill="${color}"/>`;
+		display += `<rect class="dataModule" x="${messageBitPosX*8}" y="${messageBitPosY*8}" width="8" height="8" fill="${color}"/>`;
 
 		if(n % 2 === 0) {
 			messageBitPosX -= 1;
@@ -106,6 +108,67 @@ function generateQRCode() {
 
 	qrCodeSvg.innerHTML = display;
 
+	const maskPatterns = [
+		{mask: '000', func: (i, j) => (i + j) % 2},
+		{mask: '001', func: (i, j) => (j) % 2},
+		{mask: '010', func: (i, j) => (i) % 3},
+		{mask: '011', func: (i, j) => (i + j) % 3},
+		{mask: '100', func: (i, j) => (Math.floor(i / 3) + Math.floor(j / 2)) % 2},
+		{mask: '101', func: (i, j) => i * j % 2 + i * j % 3},
+		{mask: '110', func: (i, j) => (i * j % 2 + i * j % 3) % 2},
+		{mask: '111', func: (i, j) => ((i + j) % 2 + i * j % 3) % 2},
+	]
+
+	const errorCorrectionLevelBits = new Map([
+		['L', '01'],
+		['M', '00'],
+		['Q', '11'],
+		['H', '10']
+	]);
+
+	const formatString = errorCorrectionLevelBits.get(errorCorrectionLevel) + maskPatterns[maskPattern].mask;
+	const normalizedFormatString = formatString.slice(formatString.indexOf('1'), formatString.length) + '0'.repeat(10);
+	let payload = '10100110111';
+
+	let errorCorrectionWords = normalizedFormatString;
+	for(let i = 0; errorCorrectionWords.length >= payload.length; i++) {
+		const temp = errorCorrectionWords;
+		const paddedPayload = payload + (payload.length < errorCorrectionWords.length ? '0'.repeat(errorCorrectionWords.length - payload.length) : '');
+		errorCorrectionWords = toBinary(parseInt(errorCorrectionWords, 2) ^ parseInt(paddedPayload, 2), 14);
+		errorCorrectionWords = errorCorrectionWords.slice(errorCorrectionWords.indexOf(1), errorCorrectionWords.length);
+		console.log(`# STEP ${i + 1}: \n\t${temp} ^ \n\t${paddedPayload} = \n\t${errorCorrectionWords}`);
+	}
+
+	const formatDataMaskPattern = '101010000010010';
+	const formatStringWithErrorCorrection = formatString + errorCorrectionWords;
+	const maskedFormatString = [];
+	for(let i = 0; i < formatDataMaskPattern.length; i++) {
+		const character = formatStringWithErrorCorrection[i] === '1';
+		maskedFormatString[i] = ((formatDataMaskPattern[i] === '1') !== character) ? '1' : '0';
+	}
+
+	console.log(maskedFormatString.join(''));
+
+	let formatYIndex = 0, formatXIndex = 0;
+	for(let i = 0; i < qrCodeSize; i++) {
+		for(let j = 0; j < qrCodeSize; j++) {
+			const dataModule = qrCodeSvg.querySelector(`.dataModule[x="${i*8}"][y="${j*8}"]`);
+			const formatModule = qrCodeSvg.querySelector(`.formatModule[x="${i*8}"][y="${j*8}"][fill="#0000ff"]`);
+
+			if(dataModule && maskPatterns[maskPattern].func(i, j) === 0) {
+				dataModule.setAttribute('fill', (dataModule.getAttribute('fill') === '#ffffff' ? '#000000' : '#ffffff'));
+			}
+
+			if(formatModule && i === 8) {
+				formatModule.setAttribute('fill', (maskedFormatString[formatYIndex++] === '0' ? '#ffffff' : '#000000'));
+				continue;
+			}
+
+			if(formatModule && j === 8) {
+				formatModule.setAttribute('fill', (maskedFormatString[formatXIndex++] === '0' ? '#ffffff' : '#000000'));
+			}
+		}
+	}
 }
 
 function encodeData(data, mode, version, errorCorrectionLevel) {
@@ -288,5 +351,5 @@ function getVersionInformation(version) {
 
 function toBinary(number, bits) {
 	const binaryRepresentation = number.toString(2);
-	return '0'.repeat(bits - binaryRepresentation.length) + binaryRepresentation;
+	return (bits - binaryRepresentation.length >= 0 ) ? '0'.repeat(bits - binaryRepresentation.length) + binaryRepresentation : binaryRepresentation;
 }
