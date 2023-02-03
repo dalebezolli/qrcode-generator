@@ -12,7 +12,7 @@ function generateQRCode() {
 	const version = parseInt(versionInputBox.value);
 	const errorCorrectionLevel = errorCorrectionLevelInputBox.value;
 	const mode = '0010';
-	const maskPattern = parseInt(maskPatternInputBox.value);
+	const maskPattern = parseInt(maskPatternInputBox.value) - 1;
 	console.log(`GENERATE QR CODE v${version} level-${errorCorrectionLevel} mode-${mode}`);
 
     const message = encodeData(data, mode, version, errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
