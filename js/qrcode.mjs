@@ -1,38 +1,30 @@
-// ONLY ACCOUNTING FOR ALNUMS CURRENTLY
-function generateQRCode() {
+function generate(data, options, svgId) {
 	const [aToInteger, integerToA] = generateGaloisField();
 
-    const messageInputBox = document.getElementById('message');
-    const versionInputBox = document.getElementById('version');
-    const errorCorrectionLevelInputBox = document.getElementById('errorCorrectionLevel');
-    const maskPatternInputBox = document.getElementById('maskPattern');
-	const qrCodeSvg = document.getElementById('qrcode');
+	const qrCodeSvg = document.getElementById(svgId);
 
-	const data = messageInputBox.value;
-	const version = parseInt(versionInputBox.value);
-	const errorCorrectionLevel = errorCorrectionLevelInputBox.value;
 	const mode = '0010';
-	const maskPattern = parseInt(maskPatternInputBox.value) - 1;
-	console.log(`GENERATE QR CODE v${version} level-${errorCorrectionLevel} mode-${mode}`);
+	console.log(`GENERATE QR CODE v${options.version} level-${options.errorCorrectionLevel} mode-${mode}`);
 
-    const message = encodeData(data, mode, version, errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
-	const errorCodeWords = generateErrorCodeWords(message, version, errorCorrectionLevel, [aToInteger, integerToA]);
+    const message = encodeData(data, mode, options.version, options.errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
+	const errorCodeWords = generateErrorCodeWords(message, options.version, options.errorCorrectionLevel, [aToInteger, integerToA]);
+	console.log(errorCodeWords);
 
 	const messageWithErrorCodeWords = 
 		message.map(element => {
-			string = element.toString(2);
+			const string = element.toString(2);
 			const leading0s = 8 - string.length;
 			return "0".repeat(leading0s) + string;
 		}).join('') +
 		errorCodeWords.map(element => {
-			string = element.toString(2);
+			const string = element.toString(2);
 			const leading0s = 8 - string.length;
 			return "0".repeat(leading0s) + string;
 		}).join('');
 
 	console.log(messageWithErrorCodeWords);
 
-	const qrCodeSize = (version * 4) + 17;
+	const qrCodeSize = (options.version * 4) + 17;
 	qrCodeSvg.setAttribute('viewBox', `0 0 ${qrCodeSize * 8} ${qrCodeSize * 8}`);
 
 	let display = '<rect width="100%" height="100%" fill="#a0a0a0" shape-rendering="crispEdges"/>';
@@ -58,7 +50,7 @@ function generateQRCode() {
 				const location = (j > i) ? j : i;
 				const color = (location % 2 === 0) ? '#000000' : '#ffffff';
 				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${color}"/>`;
-			} else if(i === 8 && j === version*4 + 9) {
+			} else if(i === 8 && j === options.version*4 + 9) {
 				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#000000"/>`;
 			} else if(j === 8 && (i < 8 && i != 6 || i > qrCodeSize - 9)) {
 				display += `<rect class="formatModule" x="${i*8}" y="${j*8}" width="8" height="8" fill="#0000ff"/>`;
@@ -114,9 +106,9 @@ function generateQRCode() {
 		{mask: '010', func: (i, j) => (i) % 3},
 		{mask: '011', func: (i, j) => (i + j) % 3},
 		{mask: '100', func: (i, j) => (Math.floor(i / 3) + Math.floor(j / 2)) % 2},
-		{mask: '101', func: (i, j) => i * j % 2 + i * j % 3},
-		{mask: '110', func: (i, j) => (i * j % 2 + i * j % 3) % 2},
-		{mask: '111', func: (i, j) => ((i + j) % 2 + i * j % 3) % 2},
+		{mask: '101', func: (i, j) => (i * j) % 2 + (i * j) % 3},
+		{mask: '110', func: (i, j) => ((i * j) % 2 + (i * j) % 3) % 2},
+		{mask: '111', func: (i, j) => ((i + j) % 2 + (i * j) % 3) % 2},
 	]
 
 	const errorCorrectionLevelBits = new Map([
@@ -126,7 +118,7 @@ function generateQRCode() {
 		['H', '10']
 	]);
 
-	const formatString = errorCorrectionLevelBits.get(errorCorrectionLevel) + maskPatterns[maskPattern].mask;
+	const formatString = errorCorrectionLevelBits.get(options.errorCorrectionLevel) + maskPatterns[options.maskPattern].mask;
 	const normalizedFormatString = formatString.slice(formatString.indexOf('1'), formatString.length) + '0'.repeat(10);
 	let payload = '10100110111';
 
@@ -155,7 +147,7 @@ function generateQRCode() {
 			const dataModule = qrCodeSvg.querySelector(`.dataModule[x="${i*8}"][y="${j*8}"]`);
 			const formatModule = qrCodeSvg.querySelector(`.formatModule[x="${i*8}"][y="${j*8}"][fill="#0000ff"]`);
 
-			if(dataModule && maskPatterns[maskPattern].func(i, j) === 0) {
+			if(dataModule && maskPatterns[options.maskPattern].func(i, j) === 0) {
 				dataModule.setAttribute('fill', (dataModule.getAttribute('fill') === '#ffffff' ? '#000000' : '#ffffff'));
 			}
 
@@ -257,7 +249,7 @@ function generateErrorCodeWords(message, version, errorCorrectionLevel, galoisFi
 		}
 	}
 
-	errorCorrectionCodewords = messageData.slice(messageData.length - errorCorrectionCodewordsLength - 1, -1);
+	errorCorrectionCodewords = messageData.slice(messageData.length - errorCorrectionCodewordsLength, messageData.length);
 	return errorCorrectionCodewords;
 }
 
@@ -353,3 +345,5 @@ function toBinary(number, bits) {
 	const binaryRepresentation = number.toString(2);
 	return (bits - binaryRepresentation.length >= 0 ) ? '0'.repeat(bits - binaryRepresentation.length) + binaryRepresentation : binaryRepresentation;
 }
+
+export {generate};
