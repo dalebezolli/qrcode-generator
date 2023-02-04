@@ -1,13 +1,40 @@
+import {errorCorrectionLevel as ecLevel} from "./error-correction.mjs";
+import {mask as maskData} from "./mask.mjs";
+
 function generate(data, options, svgId) {
+	if(typeof data !== 'string' || data === '') {
+		throw Error('Data input must be a string');
+	}
+
+	let version = 0;
+	let mask;
+	let errorCorrectionLevel;
+
+	if(typeof options !== 'undefined') {
+		if(!isNaN(options.version) && options.version >= 1 && options.version <= 40) {
+			version = options.version;
+		}
+
+		if(!isNaN(options.mask) && options.mask >= 0 && options.mask <= 7) {
+			mask = maskData[options.mask];
+		}
+
+		if(typeof options.errorCorrectionLevel === 'string') {
+			errorCorrectionLevel = ecLevel[options.errorCorrectionLevel];
+		}
+	}
+
+	console.log({version, mask, errorCorrectionLevel}, options);
+
 	const [aToInteger, integerToA] = generateGaloisField();
 
 	const qrCodeSvg = document.getElementById(svgId);
 
 	const mode = '0010';
-	console.log(`GENERATE QR CODE v${options.version} level-${options.errorCorrectionLevel} mode-${mode}`);
+	console.log(`GENERATE QR CODE v${version} level-${options.errorCorrectionLevel} mode-${mode}`);
 
-    const message = encodeData(data, mode, options.version, options.errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
-	const errorCodeWords = generateErrorCodeWords(message, options.version, options.errorCorrectionLevel, [aToInteger, integerToA]);
+    const message = encodeData(data, mode, version, options.errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
+	const errorCodeWords = generateErrorCodeWords(message, version, options.errorCorrectionLevel, [aToInteger, integerToA]);
 	console.log(errorCodeWords);
 
 	const messageWithErrorCodeWords = 
@@ -24,7 +51,7 @@ function generate(data, options, svgId) {
 
 	console.log(messageWithErrorCodeWords);
 
-	const qrCodeSize = (options.version * 4) + 17;
+	const qrCodeSize = (version * 4) + 17;
 	qrCodeSvg.setAttribute('viewBox', `0 0 ${qrCodeSize * 8} ${qrCodeSize * 8}`);
 
 	let display = '<rect width="100%" height="100%" fill="#a0a0a0" shape-rendering="crispEdges"/>';
@@ -50,7 +77,7 @@ function generate(data, options, svgId) {
 				const location = (j > i) ? j : i;
 				const color = (location % 2 === 0) ? '#000000' : '#ffffff';
 				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${color}"/>`;
-			} else if(i === 8 && j === options.version*4 + 9) {
+			} else if(i === 8 && j === version*4 + 9) {
 				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#000000"/>`;
 			} else if(j === 8 && (i < 8 && i != 6 || i > qrCodeSize - 9)) {
 				display += `<rect class="formatModule" x="${i*8}" y="${j*8}" width="8" height="8" fill="#0000ff"/>`;
@@ -118,7 +145,7 @@ function generate(data, options, svgId) {
 		['H', '10']
 	]);
 
-	const formatString = errorCorrectionLevelBits.get(options.errorCorrectionLevel) + maskPatterns[options.maskPattern].mask;
+	const formatString = errorCorrectionLevelBits.get(options.errorCorrectionLevel) + maskPatterns[options.mask].mask;
 	const normalizedFormatString = formatString.slice(formatString.indexOf('1'), formatString.length) + '0'.repeat(10);
 	let payload = '10100110111';
 
@@ -147,7 +174,7 @@ function generate(data, options, svgId) {
 			const dataModule = qrCodeSvg.querySelector(`.dataModule[x="${i*8}"][y="${j*8}"]`);
 			const formatModule = qrCodeSvg.querySelector(`.formatModule[x="${i*8}"][y="${j*8}"][fill="#0000ff"]`);
 
-			if(dataModule && maskPatterns[options.maskPattern].func(i, j) === 0) {
+			if(dataModule && maskPatterns[options.mask].func(i, j) === 0) {
 				dataModule.setAttribute('fill', (dataModule.getAttribute('fill') === '#ffffff' ? '#000000' : '#ffffff'));
 			}
 

@@ -12,7 +12,7 @@ function generateQRCode() {
 	const maskPattern = parseInt(maskPatternInputBox.value) - 1;
 
 	const userData = messageInputBox.value;
-	const qrCodeSettings = {version, errorCorrectionLevel, maskPattern};
+	const qrCodeSettings = {version, errorCorrectionLevel, mask: maskPattern};
 
 	generate(userData, qrCodeSettings, 'qrcode'); // TODO: Once qr code matrix generation is decoupled from qr code drawing delete the svgId
 }
