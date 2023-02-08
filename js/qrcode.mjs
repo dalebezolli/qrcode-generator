@@ -127,18 +127,7 @@ function generate(data, options, svgId) {
 
 	qrCodeSvg.innerHTML = display;
 
-	const maskPatterns = [
-		{mask: '000', func: (i, j) => (i + j) % 2},
-		{mask: '001', func: (i, j) => (j) % 2},
-		{mask: '010', func: (i, j) => (i) % 3},
-		{mask: '011', func: (i, j) => (i + j) % 3},
-		{mask: '100', func: (i, j) => (Math.floor(i / 3) + Math.floor(j / 2)) % 2},
-		{mask: '101', func: (i, j) => (i * j) % 2 + (i * j) % 3},
-		{mask: '110', func: (i, j) => ((i * j) % 2 + (i * j) % 3) % 2},
-		{mask: '111', func: (i, j) => ((i + j) % 2 + (i * j) % 3) % 2},
-	]
-
-	const formatString = errorCorrectionLevel.toString(2) + maskPatterns[options.mask].mask;
+	const formatString = errorCorrectionLevel.toString(2) + mask.mask;
 	const normalizedFormatString = formatString.slice(formatString.indexOf('1'), formatString.length) + '0'.repeat(10);
 	let payload = '10100110111';
 
@@ -167,7 +156,7 @@ function generate(data, options, svgId) {
 			const dataModule = qrCodeSvg.querySelector(`.dataModule[x="${i*8}"][y="${j*8}"]`);
 			const formatModule = qrCodeSvg.querySelector(`.formatModule[x="${i*8}"][y="${j*8}"][fill="#0000ff"]`);
 
-			if(dataModule && maskPatterns[options.mask].func(i, j) === 0) {
+			if(dataModule && mask.pattern(i, j) === 0) {
 				dataModule.setAttribute('fill', (dataModule.getAttribute('fill') === '#ffffff' ? '#000000' : '#ffffff'));
 			}
 
