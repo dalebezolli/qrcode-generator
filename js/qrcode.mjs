@@ -33,8 +33,8 @@ function generate(data, options, svgId) {
 	const mode = '0010';
 	console.log(`GENERATE QR CODE v${version} level-${options.errorCorrectionLevel} mode-${mode}`);
 
-    const message = encodeData(data, mode, version, options.errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
-	const errorCodeWords = generateErrorCodeWords(message, version, options.errorCorrectionLevel, [aToInteger, integerToA]);
+    const message = encodeData(data, mode, version, errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
+	const errorCodeWords = generateErrorCodeWords(message, version, errorCorrectionLevel, [aToInteger, integerToA]);
 	console.log(errorCodeWords);
 
 	const messageWithErrorCodeWords = 
@@ -138,14 +138,7 @@ function generate(data, options, svgId) {
 		{mask: '111', func: (i, j) => ((i + j) % 2 + (i * j) % 3) % 2},
 	]
 
-	const errorCorrectionLevelBits = new Map([
-		['L', '01'],
-		['M', '00'],
-		['Q', '11'],
-		['H', '10']
-	]);
-
-	const formatString = errorCorrectionLevelBits.get(options.errorCorrectionLevel) + maskPatterns[options.mask].mask;
+	const formatString = errorCorrectionLevel.toString(2) + maskPatterns[options.mask].mask;
 	const normalizedFormatString = formatString.slice(formatString.indexOf('1'), formatString.length) + '0'.repeat(10);
 	let payload = '10100110111';
 
@@ -360,9 +353,10 @@ const alphanumericMap = new Map([
 ]);
 
 function getVersionInformation(version) {
+	// TODO: Find a way to generate this information instead of creating a map for each version
 	let versionInformation = new Map([
-		[1, [{mode: 'Alphanumeric', capacity: {'L': {message: 19, error: 7}, 'M': {message: 16, error: 10}, 'Q': {message: 13, error: 13}, 'H': {message: 9, error: 17}}}]],
-		[2, [{mode: 'Alphanumeric', capacity: {'L': {message: 34, error: 10}, 'M': {message: 28, error: 16}, 'Q': {message: 22, error: 22}, 'H': {message: 16, error: 28}}}]],
+		[1, [{mode: 'Alphanumeric', capacity: {0b01: {message: 19, error: 7}, 0b00: {message: 16, error: 10}, 0b11: {message: 13, error: 13}, 0b10: {message: 9, error: 17}}}]],
+		[2, [{mode: 'Alphanumeric', capacity: {0b01: {message: 34, error: 10}, 0b00: {message: 28, error: 16}, 0b11: {message: 22, error: 22}, 0b10: {message: 16, error: 28}}}]],
 	]);
 
 	return versionInformation.get(version);
