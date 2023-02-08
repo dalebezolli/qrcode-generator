@@ -26,14 +26,19 @@ function generate(data, options, svgId) {
 
 	console.log({version, mask, errorCorrectionLevel}, options);
 
-	const [aToInteger, integerToA] = generateGaloisField();
-
 	const qrCodeSvg = document.getElementById(svgId);
 
 	const mode = '0010';
-	console.log(`GENERATE QR CODE v${version} level-${options.errorCorrectionLevel} mode-${mode}`);
+
+	genereateQRCode(qrCodeSvg, data, version, mode, errorCorrectionLevel, mask);
+}
+
+function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
+	console.log(`GENERATE QR CODE v${version} level-${Object.keys(ecLevel).find(key => ecLevel[key] === errorCorrectionLevel)} mode-${mode}`);
 
     const message = encodeData(data, mode, version, errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
+
+	const [aToInteger, integerToA] = generateGaloisField();
 	const errorCodeWords = generateErrorCodeWords(message, version, errorCorrectionLevel, [aToInteger, integerToA]);
 	console.log(errorCodeWords);
 
@@ -49,17 +54,26 @@ function generate(data, options, svgId) {
 			return "0".repeat(leading0s) + string;
 		}).join('');
 
-	console.log(messageWithErrorCodeWords);
-
 	const qrCodeSize = (version * 4) + 17;
-	qrCodeSvg.setAttribute('viewBox', `0 0 ${qrCodeSize * 8} ${qrCodeSize * 8}`);
+
+	generateFunctionalPatterns(svg, qrCodeSize, version);
+
+	generateDataPatterns(svg, qrCodeSize, messageWithErrorCodeWords);
+
+	generateFormatPattern(svg, qrCodeSize, errorCorrectionLevel, mask);
+
+	generateMaskPattern(svg, qrCodeSize, mask);
+}
+
+function generateFunctionalPatterns(svg, size, version) {
+	svg.setAttribute('viewBox', `0 0 ${size * 8} ${size * 8}`);
 
 	let display = '<rect width="100%" height="100%" fill="#a0a0a0" shape-rendering="crispEdges"/>';
-	for(let i = 0; i < qrCodeSize; i++) {
-		for(let j = 0; j < qrCodeSize; j++) {
-			if(i < 7 && j < 7 || i > qrCodeSize - 8 && j < 7 || i < 7 && j > qrCodeSize - 8) {
-				let finderStartX = (i < 7) ? 0 : qrCodeSize - 7;
-				let finderStartY = (j < 7) ? 0 : qrCodeSize - 7;
+	for(let i = 0; i < size; i++) {
+		for(let j = 0; j < size; j++) {
+			if(i < 7 && j < 7 || i > size - 8 && j < 7 || i < 7 && j > size - 8) {
+				let finderStartX = (i < 7) ? 0 : size - 7;
+				let finderStartY = (j < 7) ? 0 : size - 7;
 
 				let currentColor = '#ffffff';
 				if(i === finderStartX || i === finderStartX + 6 || j === finderStartY || j === finderStartY + 6) {
@@ -71,28 +85,32 @@ function generate(data, options, svgId) {
 				}
 
 				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${currentColor}" shape-rendering="crispEdges"/>`;
-			} else if((j === 7 && (i < 8 || i > qrCodeSize - 9) || j === qrCodeSize - 8 && i < 8) || (i === 7 && (j < 8 || j > qrCodeSize - 9) || i === qrCodeSize - 8 && j < 8)) {
+			} else if((j === 7 && (i < 8 || i > size - 9) || j === size - 8 && i < 8) || (i === 7 && (j < 8 || j > size - 9) || i === size - 8 && j < 8)) {
 				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#ffffff" shape-rendering="crispEdges"/>`;
-			} else if(j === 6 && (i > 7 && i < qrCodeSize - 8) || i === 6 && (j > 7 && j < qrCodeSize - 8)) {
+			} else if(j === 6 && (i > 7 && i < size - 8) || i === 6 && (j > 7 && j < size - 8)) {
 				const location = (j > i) ? j : i;
 				const color = (location % 2 === 0) ? '#000000' : '#ffffff';
 				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${color}"/>`;
 			} else if(i === 8 && j === version*4 + 9) {
 				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#000000"/>`;
-			} else if(j === 8 && (i < 8 && i != 6 || i > qrCodeSize - 9)) {
+			} else if(j === 8 && (i < 8 && i != 6 || i > size - 9)) {
 				display += `<rect class="formatModule" x="${i*8}" y="${j*8}" width="8" height="8" fill="#0000ff"/>`;
-			} else if(i === 8 && (j < 9 && j !== 6 || j > qrCodeSize - 8)) {
+			} else if(i === 8 && (j < 9 && j !== 6 || j > size - 8)) {
 				display += `<rect class="formatModule" x="${i*8}" y="${j*8}" width="8" height="8" fill="#0000ff"/>`;
 			}		
 		}
 	}
-	qrCodeSvg.innerHTML = display;
 
-	let messageBitPosX = qrCodeSize - 1;
-	let messageBitPosY = qrCodeSize - 1;
+	svg.innerHTML = display;
+}
+
+function generateDataPatterns(svg, size, message) {
+	let messageBitPosX = size - 1;
+	let messageBitPosY = size - 1;
 	let direction = 1;
-	for(let n = 0; n < messageWithErrorCodeWords.length; n++) {
-		const currentCharacter = messageWithErrorCodeWords.charAt(n);
+	let display = '';
+	for(let n = 0; n < message.length; n++) {
+		const currentCharacter = message.charAt(n);
 		const color = (currentCharacter === '1') ? '#000000' : '#ffffff';
 
 		display += `<rect class="dataModule" x="${messageBitPosX*8}" y="${messageBitPosY*8}" width="8" height="8" fill="${color}"/>`;
@@ -108,7 +126,7 @@ function generate(data, options, svgId) {
 			messageBitPosY -= direction;
 		}
 
-		if(document.querySelector(`rect[x='${messageBitPosX*8}'][y='${messageBitPosY*8}']`) || messageBitPosY > qrCodeSize - 1 || messageBitPosY < 0) {
+		if(document.querySelector(`rect[x='${messageBitPosX*8}'][y='${messageBitPosY*8}']`) || messageBitPosY > size - 1 || messageBitPosY < 0) {
 			messageBitPosX -= 2;
 			direction = (direction === 1) ? -1 : 1;
 			messageBitPosY -= direction;
@@ -118,15 +136,17 @@ function generate(data, options, svgId) {
 			messageBitPosX--;
 		}
 	
-		if(messageBitPosX < 9 && (messageBitPosY > qrCodeSize - 9 || messageBitPosY < 8)) {
+		if(messageBitPosX < 9 && (messageBitPosY > size - 9 || messageBitPosY < 8)) {
 			while(document.querySelector(`rect[x='${messageBitPosX*8}'][y='${messageBitPosY*8}']`)) {
 				messageBitPosY -= direction;
 			}
 		}
 	}
 
-	qrCodeSvg.innerHTML = display;
+	svg.innerHTML += display;
+}
 
+function generateFormatPattern(svg, size, errorCorrectionLevel, mask) {
 	const formatString = errorCorrectionLevel.toString(2) + mask.mask;
 	const normalizedFormatString = formatString.slice(formatString.indexOf('1'), formatString.length) + '0'.repeat(10);
 	let payload = '10100110111';
@@ -148,17 +168,10 @@ function generate(data, options, svgId) {
 		maskedFormatString[i] = ((formatDataMaskPattern[i] === '1') !== character) ? '1' : '0';
 	}
 
-	console.log(maskedFormatString.join(''));
-
 	let formatYIndex = 0, formatXIndex = 0;
-	for(let i = 0; i < qrCodeSize; i++) {
-		for(let j = 0; j < qrCodeSize; j++) {
-			const dataModule = qrCodeSvg.querySelector(`.dataModule[x="${i*8}"][y="${j*8}"]`);
-			const formatModule = qrCodeSvg.querySelector(`.formatModule[x="${i*8}"][y="${j*8}"][fill="#0000ff"]`);
-
-			if(dataModule && mask.pattern(i, j) === 0) {
-				dataModule.setAttribute('fill', (dataModule.getAttribute('fill') === '#ffffff' ? '#000000' : '#ffffff'));
-			}
+	for(let i = 0; i < size; i++) {
+		for(let j = 0; j < size; j++) {
+			const formatModule = svg.querySelector(`.formatModule[x="${i*8}"][y="${j*8}"][fill="#0000ff"]`);
 
 			if(formatModule && i === 8) {
 				formatModule.setAttribute('fill', (maskedFormatString[formatYIndex++] === '0' ? '#ffffff' : '#000000'));
@@ -167,6 +180,18 @@ function generate(data, options, svgId) {
 
 			if(formatModule && j === 8) {
 				formatModule.setAttribute('fill', (maskedFormatString[formatXIndex++] === '0' ? '#ffffff' : '#000000'));
+			}
+		}
+	}
+}
+
+function generateMaskPattern(svg, size, mask) {
+	for(let i = 0; i < size; i++) {
+		for(let j = 0; j < size; j++) {
+			const dataModule = svg.querySelector(`.dataModule[x="${i*8}"][y="${j*8}"]`);
+
+			if(dataModule && mask.pattern(i, j) === 0) {
+				dataModule.setAttribute('fill', (dataModule.getAttribute('fill') === '#ffffff' ? '#000000' : '#ffffff'));
 			}
 		}
 	}
