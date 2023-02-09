@@ -39,8 +39,7 @@ function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
 
     let dataBuffer = encodeData(data, mode, version, errorCorrectionLevel);
 
-	const [aToInteger, integerToA] = generateGaloisField();
-	const errorCodeWords = generateErrorCodeWords(dataBuffer.buffer, version, errorCorrectionLevel, [aToInteger, integerToA]);
+	const errorCodeWords = generateErrorCodeWords(dataBuffer.buffer, version, errorCorrectionLevel);
 
 	let messageByteString = '';
 	dataBuffer.buffer.forEach(element => {
@@ -227,13 +226,13 @@ function encodeData(data, mode, version, errorCorrectionLevel) {
 	return dataBuffer;
 }
 
-function generateErrorCodeWords(message, version, errorCorrectionLevel, galoisFields) {	
+function generateErrorCodeWords(message, version, errorCorrectionLevel) {	
 	let errorCorrectionCodewords;
 	const errorCorrectionCodewordsLength = getVersionInformation(version)[0].capacity[errorCorrectionLevel].error;
 
+	const [aToInteger, integerToA] = generateGaloisField();
     let messageData = [...message];
 	const messageDataLength = message.length;
-	const [aToInteger, integerToA] = galoisFields;
 
 	let payload = [0, 0];
 	for(let n = 1; n < errorCorrectionCodewordsLength; n++) {
