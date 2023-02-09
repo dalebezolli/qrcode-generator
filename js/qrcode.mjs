@@ -25,12 +25,8 @@ function generate(data, options, svgId) {
 		}
 	}
 
-	console.log({version, mask, errorCorrectionLevel}, options);
-
 	const qrCodeSvg = document.getElementById(svgId);
-
 	const mode = '0010';
-
 	genereateQRCode(qrCodeSvg, data, version, mode, errorCorrectionLevel, mask);
 }
 
@@ -153,11 +149,9 @@ function generateFormatPattern(svg, size, errorCorrectionLevel, mask) {
 
 	let errorCorrectionWords = normalizedFormatString;
 	for(let i = 0; errorCorrectionWords.length >= payload.length; i++) {
-		const temp = errorCorrectionWords;
 		const paddedPayload = payload + (payload.length < errorCorrectionWords.length ? '0'.repeat(errorCorrectionWords.length - payload.length) : '');
 		errorCorrectionWords = toBinary(parseInt(errorCorrectionWords, 2) ^ parseInt(paddedPayload, 2), 14);
 		errorCorrectionWords = errorCorrectionWords.slice(errorCorrectionWords.indexOf(1), errorCorrectionWords.length);
-		console.log(`# STEP ${i + 1}: \n\t${temp} ^ \n\t${paddedPayload} = \n\t${errorCorrectionWords}`);
 	}
 
 	const formatDataMaskPattern = '101010000010010';
