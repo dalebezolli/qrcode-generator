@@ -1,5 +1,6 @@
 import {errorCorrectionLevel as ecLevel} from "./error-correction.mjs";
 import {mask as maskData} from "./mask.mjs";
+import { DataBuffer } from "./databuffer.mjs";
 
 function generate(data, options, svgId) {
 	if(typeof data !== 'string' || data === '') {
@@ -36,24 +37,24 @@ function generate(data, options, svgId) {
 function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
 	console.log(`GENERATE QR CODE v${version} level-${Object.keys(ecLevel).find(key => ecLevel[key] === errorCorrectionLevel)} mode-${mode}`);
 
-    const message = encodeData(data, mode, version, errorCorrectionLevel).match(/.{8}/g).map(element => parseInt(element, 2));
+    let dataBuffer = encodeData(data, mode, version, errorCorrectionLevel);
 
 	const [aToInteger, integerToA] = generateGaloisField();
-	const errorCodeWords = generateErrorCodeWords(message, version, errorCorrectionLevel, [aToInteger, integerToA]);
-	console.log(errorCodeWords);
+	const errorCodeWords = generateErrorCodeWords(dataBuffer.buffer, version, errorCorrectionLevel, [aToInteger, integerToA]);
+
+	let messageByteString = '';
+	dataBuffer.buffer.forEach(element => {
+		const string = element.toString(2);
+		const leading0s = 8 - string.length;
+		messageByteString += "0".repeat(leading0s) + string;
+	});
 
 	const messageWithErrorCodeWords = 
-		message.map(element => {
-			const string = element.toString(2);
-			const leading0s = 8 - string.length;
-			return "0".repeat(leading0s) + string;
-		}).join('') +
-		errorCodeWords.map(element => {
+		messageByteString + errorCodeWords.map(element => {
 			const string = element.toString(2);
 			const leading0s = 8 - string.length;
 			return "0".repeat(leading0s) + string;
 		}).join('');
-
 	const qrCodeSize = (version * 4) + 17;
 
 	generateFunctionalPatterns(svg, qrCodeSize, version);
@@ -198,47 +199,32 @@ function generateMaskPattern(svg, size, mask) {
 }
 
 function encodeData(data, mode, version, errorCorrectionLevel) {
-	const batchedData = [];
-	const characterCount = data.length;
-	let characterBitsSize;
-	let maxDataBytesLength = getVersionInformation(version)[0].capacity[errorCorrectionLevel].message;
-
-	if(version < 10) {
-		characterBitsSize = 9;
-	} else if(version < 27) {
-		characterBitsSize = 11;
-	} else {
-		characterBitsSize = 13;
-	}
+	const maxDataBytesLength = getVersionInformation(version)[0].capacity[errorCorrectionLevel].message;
+	const dataBuffer = new DataBuffer(maxDataBytesLength);
 
 	if(mode !== '0010') return;
 
-	for(let i = 0; i < data.length; i++) {
-		const character = alphanumericMap.get(data[i].toUpperCase());
-		if(i % 2 === 0 && i !== data.length - 1) {
-			batchedData[Math.floor(i / 2)] = character * 45;
-		} else {
-			const prevNum = batchedData[Math.floor(i / 2)] || 0;
-			batchedData[Math.floor(i / 2)] = prevNum + character;
-		}
+	dataBuffer.push(2, 4);
+	dataBuffer.push(data.length, 9);
+
+	for(let i = 0; i + 2 < data.length; i += 2) {
+		let number = alphanumericMap.get(data[i].toUpperCase()) * 45;
+		number += alphanumericMap.get(data[i + 1].toUpperCase());
+		dataBuffer.push(number, 11);
 	}
 
-	const encodedDataBits = batchedData.map((characterBatch, index) => {
-		const isLastAndOdd = index === batchedData.length - 1 && index % 2 === 1;
-		return isLastAndOdd ? toBinary(characterBatch, 6) : toBinary(characterBatch, 11);
-	}
-	);
-
-	const encodedMessage = mode + toBinary(characterCount, characterBitsSize) + encodedDataBits.join('');
-	const trailingBits = encodedMessage.length % 8;
-
-	let encodedPaddedMessage = encodedMessage + "0".repeat(8 - trailingBits);
-	const padBytes = '1110110000010001';
-	while(encodedPaddedMessage.length < maxDataBytesLength * 8) {
-		encodedPaddedMessage += padBytes.slice(0, maxDataBytesLength * 8 - encodedPaddedMessage.length);
+	if(data.length % 2) {
+		dataBuffer.push(alphanumericMap.get(data[data.length - 1].toUpperCase()), 6);
 	}
 
-	return encodedPaddedMessage;
+	dataBuffer.push(0, 8 - dataBuffer.length % 8);
+
+	const maxDataBitsLength = maxDataBytesLength * 8;
+	for(let i = 0; dataBuffer.length < maxDataBitsLength; i++) {
+		dataBuffer.push((i % 2 === 0 ? 0b11101100 : 0b00010001), 8);
+	}
+
+	return dataBuffer;
 }
 
 function generateErrorCodeWords(message, version, errorCorrectionLevel, galoisFields) {	
@@ -319,51 +305,10 @@ function generateGaloisField() {
 }
 
 const alphanumericMap = new Map([
-	['0', 0],
-	['1', 1],
-	['2', 2],
-	['3', 3],
-	['4', 4],
-	['5', 5],
-	['6', 6],
-	['7', 7],
-	['8', 8],
-	['9', 9],
-	['A', 10],
-	['B', 11],
-	['C', 12],
-	['D', 13],
-	['E', 14],
-	['F', 15],
-	['G', 16],
-	['H', 17],
-	['I', 18],
-	['J', 19],
-	['K', 20],
-	['L', 21],
-	['M', 22],
-	['N', 23],
-	['O', 24],
-	['P', 25],
-	['Q', 26],
-	['R', 27],
-	['S', 28],
-	['T', 29],
-	['U', 30],
-	['V', 31],
-	['W', 32],
-	['X', 33],
-	['Y', 34],
-	['Z', 35],
-	[' ', 36],
-	['$', 37],
-	['%', 38],
-	['*', 39],
-	['+', 40],
-	['-', 41],
-	['.', 42],
-	['/', 43],
-	[':', 44]
+	['0', 0], ['1', 1], ['2', 2], ['3', 3], ['4', 4], ['5', 5], ['6', 6], ['7', 7], ['8', 8], ['9', 9],
+	['A', 10], ['B', 11], ['C', 12], ['D', 13], ['E', 14], ['F', 15], ['G', 16], ['H', 17], ['I', 18], ['J', 19], ['K', 20], ['L', 21], ['M', 22],
+	['N', 23], ['O', 24], ['P', 25], ['Q', 26], ['R', 27], ['S', 28], ['T', 29], ['U', 30], ['V', 31], ['W', 32], ['X', 33], ['Y', 34], ['Z', 35],
+	[' ', 36], ['$', 37], ['%', 38], ['*', 39], ['+', 40], ['-', 41], ['.', 42], ['/', 43], [':', 44]
 ]);
 
 function getVersionInformation(version) {
