@@ -4,10 +4,6 @@ class DataBuffer {
 		this.length = 0;
 	}
 
-	read(index) {
-		
-	}
-
 	push(data, length) {
 		for(let bitIndex = 0; bitIndex < length; bitIndex++) {
 			const dataBufferIndex = Math.floor(this.length / 8);
