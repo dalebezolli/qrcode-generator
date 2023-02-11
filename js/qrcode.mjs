@@ -32,31 +32,28 @@ function generate(data, options, svgId) {
 
 function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
 	console.log(`GENERATE QR CODE v${version} level-${Object.keys(ecLevel).find(key => ecLevel[key] === errorCorrectionLevel)} mode-${mode}`);
-
-    let dataBuffer = encodeData(data, mode, version, errorCorrectionLevel);
-
-	const errorCodeWords = generateErrorCorrectionBuffer(dataBuffer.buffer, version, errorCorrectionLevel);
-
-	let messageByteString = '';
-	dataBuffer.buffer.forEach(element => {
-		const string = element.toString(2);
-		const leading0s = 8 - string.length;
-		messageByteString += "0".repeat(leading0s) + string;
-	});
-
-	let errorCorrectionByteString = '';
-	errorCodeWords.buffer.forEach(element => {
-		const string = element.toString(2);
-		const leading0s = 8 - string.lenght;
-		messageByteString += "0".repeat(leading0s) + string;
-	});
-
-	const messageWithErrorCodeWords = messageByteString + errorCorrectionByteString;
 	const qrCodeSize = (version * 4) + 17;
+
+    const dataBuffer = encodeData(data, mode, version, errorCorrectionLevel);
+	const errorCorrectionBuffer = generateErrorCorrectionBuffer(dataBuffer.buffer, version, errorCorrectionLevel);
+	const messageBuffer = new DataBuffer(dataBuffer.length / 8 + errorCorrectionBuffer.length / 8);
+
+	dataBuffer.buffer.forEach(byte => {
+		messageBuffer.push(byte, 8);
+	});
+	errorCorrectionBuffer.buffer.forEach(byte => {
+		messageBuffer.push(byte, 8);
+	});
 
 	generateFunctionalPatterns(svg, qrCodeSize, version);
 
-	generateDataPatterns(svg, qrCodeSize, messageWithErrorCodeWords);
+	let messageBitString = '';
+	messageBuffer.buffer.forEach(element => {
+		const binaryElement = element.toString(2);
+		const length = 8 - binaryElement.length;
+		messageBitString += "0".repeat(length) + binaryElement;
+	});
+	generateDataPatterns(svg, qrCodeSize, messageBitString);
 
 	generateFormatPattern(svg, qrCodeSize, errorCorrectionLevel, mask);
 
