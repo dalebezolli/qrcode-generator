@@ -35,7 +35,7 @@ function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
 
     let dataBuffer = encodeData(data, mode, version, errorCorrectionLevel);
 
-	const errorCodeWords = generateErrorCodeWords(dataBuffer.buffer, version, errorCorrectionLevel);
+	const errorCodeWords = generateErrorCorrectionBuffer(dataBuffer.buffer, version, errorCorrectionLevel);
 
 	let messageByteString = '';
 	dataBuffer.buffer.forEach(element => {
@@ -44,12 +44,14 @@ function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
 		messageByteString += "0".repeat(leading0s) + string;
 	});
 
-	const messageWithErrorCodeWords = 
-		messageByteString + errorCodeWords.map(element => {
-			const string = element.toString(2);
-			const leading0s = 8 - string.length;
-			return "0".repeat(leading0s) + string;
-		}).join('');
+	let errorCorrectionByteString = '';
+	errorCodeWords.buffer.forEach(element => {
+		const string = element.toString(2);
+		const leading0s = 8 - string.lenght;
+		messageByteString += "0".repeat(leading0s) + string;
+	});
+
+	const messageWithErrorCodeWords = messageByteString + errorCorrectionByteString;
 	const qrCodeSize = (version * 4) + 17;
 
 	generateFunctionalPatterns(svg, qrCodeSize, version);
@@ -220,22 +222,20 @@ function encodeData(data, mode, version, errorCorrectionLevel) {
 	return dataBuffer;
 }
 
-function generateErrorCodeWords(message, version, errorCorrectionLevel) {	
-	let errorCorrectionCodewords;
-	const errorCorrectionCodewordsLength = getVersionInformation(version)[0].capacity[errorCorrectionLevel].error;
+function generateErrorCorrectionBuffer(data, version, errorCorrectionLevel) {	
+	const errorCorrectionBufferSize = getVersionInformation(version)[0].capacity[errorCorrectionLevel].error;
+	const errorCorrectionBuffer = new DataBuffer(errorCorrectionBufferSize);
+    let messageData = [...data];
 
 	const [aToInteger, integerToA] = generateGaloisField();
-    let messageData = [...message];
-	const messageDataLength = message.length;
-
-	let payload = [0, 0];
-	for(let n = 1; n < errorCorrectionCodewordsLength; n++) {
+	let generatorPolynomial = [0, 0];
+	for(let n = 1; n < errorCorrectionBufferSize; n++) {
 		const currentPolynomial = [];
 		const currentNomial = [0, n];
 
-		for(let i = 0; i < payload.length; i++) {
+		for(let i = 0; i < generatorPolynomial.length; i++) {
 			for(let j = 0; j < currentNomial.length; j++) {
-				const addedAlphaExponents = (payload[i] + currentNomial[j]) % 255;
+				const addedAlphaExponents = (generatorPolynomial[i] + currentNomial[j]) % 255;
 
 				if(currentPolynomial[i + j] === undefined) {
 					currentPolynomial[i + j] = addedAlphaExponents;
@@ -245,25 +245,27 @@ function generateErrorCodeWords(message, version, errorCorrectionLevel) {
 			}
 		}
 
-		payload = [...currentPolynomial];
+		generatorPolynomial = [...currentPolynomial];
 	}
 
+	for(let currentIndex = 0; currentIndex < data.length; currentIndex++) {
+		const currentAlphaExponent = integerToA.get(messageData[currentIndex]);
 
-	for(let currentIndex = 0; currentIndex < messageDataLength; currentIndex++) {
-		const currentMessageByteAlphaExponent = integerToA.get(messageData[currentIndex]);
-
-		const calculatedPayload = payload.map(currentExponent =>  {
-			const addedExponents = currentExponent + currentMessageByteAlphaExponent;
+		const integerPolynomial = generatorPolynomial.map(currentExponent =>  {
+			const addedExponents = currentExponent + currentAlphaExponent;
 			return aToInteger.get((addedExponents > 255 ? addedExponents % 255 : addedExponents));
 		});
 
-		for(let i = currentIndex, j = 0; j < calculatedPayload.length || i < messageDataLength; i++, j++) {
-			messageData[i] = messageData[i] ^ calculatedPayload[j];
+		for(let i = currentIndex, j = 0; j < integerPolynomial.length || i < data.length; i++, j++) {
+			messageData[i] = messageData[i] ^ integerPolynomial[j];
 		}
 	}
 
-	errorCorrectionCodewords = messageData.slice(messageData.length - errorCorrectionCodewordsLength, messageData.length);
-	return errorCorrectionCodewords;
+	for(let i = 0, j = messageData.length - errorCorrectionBufferSize; i < errorCorrectionBuffer.buffer.length; i++, j++) {
+		errorCorrectionBuffer.push(messageData[j], 8);
+	}
+
+	return errorCorrectionBuffer;
 }
 
 function generateGaloisField() {
