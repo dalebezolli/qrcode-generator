@@ -47,13 +47,6 @@ function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
 
 	generateFunctionalPatterns(svg, qrCodeSize, version);
 
-	let messageBitString = '';
-	messageBuffer.buffer.forEach(element => {
-		const binaryElement = element.toString(2);
-		const length = 8 - binaryElement.length;
-		messageBitString += "0".repeat(length) + binaryElement;
-	});
-
 	generateDataPattern(svg, qrCodeSize, messageBuffer, messageBitString);
 
 	generateFormatPattern(svg, qrCodeSize, errorCorrectionLevel, mask);
