@@ -4,6 +4,11 @@ class DataBuffer {
 		this.length = 0;
 	}
 
+	readBit(pos) {
+		const byteIndex = Math.floor(pos / 8);
+		return (this.buffer[byteIndex] >>> (7 - (pos) % 8)) & 1;
+	}
+
 	push(data, length) {
 		for(let bitIndex = 0; bitIndex < length; bitIndex++) {
 			const dataBufferIndex = Math.floor(this.length / 8);

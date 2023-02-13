@@ -53,7 +53,8 @@ function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
 		const length = 8 - binaryElement.length;
 		messageBitString += "0".repeat(length) + binaryElement;
 	});
-	generateDataPatterns(svg, qrCodeSize, messageBitString);
+
+	generateDataPattern(svg, qrCodeSize, messageBuffer, messageBitString);
 
 	generateFormatPattern(svg, qrCodeSize, errorCorrectionLevel, mask);
 
@@ -99,14 +100,15 @@ function generateFunctionalPatterns(svg, size, version) {
 	svg.innerHTML = display;
 }
 
-function generateDataPatterns(svg, size, message) {
+function generateDataPattern(svg, size, messageBuffer, message) {
 	let messageBitPosX = size - 1;
 	let messageBitPosY = size - 1;
 	let direction = 1;
 	let display = '';
-	for(let n = 0; n < message.length; n++) {
-		const currentCharacter = message.charAt(n);
-		const color = (currentCharacter === '1') ? '#000000' : '#ffffff';
+
+	for(let n = 0; n < messageBuffer.length; n++) {
+		const currentCharacter = messageBuffer.readBit(n);
+		const color = (currentCharacter === 1) ? '#000000' : '#ffffff';
 
 		display += `<rect class="dataModule" x="${messageBitPosX*8}" y="${messageBitPosY*8}" width="8" height="8" fill="${color}"/>`;
 
