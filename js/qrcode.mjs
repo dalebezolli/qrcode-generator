@@ -118,6 +118,8 @@ function generateFinderPatterns(matrix) {
 				}
 
 				matrix.set(i, j, data, false);
+			} else if((j === 7 && (i < 8 || i > matrix.size - 9) || j === matrix.size - 8 && i < 8) || (i === 7 && (j < 8 || j > matrix.size - 9) || i === matrix.size - 8 && j < 8)) {
+				matrix.set(i, j, false, false);
 			}
 		}
 	}
