@@ -51,6 +51,7 @@ function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
 
 	generateFunctionalPatterns(svg, qrCodeSize, version);
 	generateFinderPatterns(qrMatrix);
+	generateTimingPatterns(qrMatrix);
 
 	generateDataPattern(svg, qrCodeSize, messageBuffer);
 
@@ -116,6 +117,18 @@ function generateFinderPatterns(matrix) {
 					data = true;
 				}
 
+				matrix.set(i, j, data, false);
+			}
+		}
+	}
+}
+
+function generateTimingPatterns(matrix) {
+	for(let i = 0; i < matrix.size; i++) {
+		for(let j = 0; j < matrix.size; j++) {
+			if(j === 6 && (i > 7 && i < matrix.size - 8) || i === 6 && (j > 7 && j < matrix.size - 8)) {
+				const location = (j > i) ? j : i;
+				const data = (location % 2 === 0) ? true : false;
 				matrix.set(i, j, data, false);
 			}
 		}
