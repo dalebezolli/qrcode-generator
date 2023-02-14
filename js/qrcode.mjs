@@ -29,6 +29,8 @@ function generate(data, options, svgId) {
 	const qrCodeSvg = document.getElementById(svgId);
 	const mode = '0010';
 	const qrMatrix = genereateQRCode(qrCodeSvg, data, version, mode, errorCorrectionLevel, mask);
+
+	displayQRAsSVG(qrMatrix, 'newSVG');
 }
 
 function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
@@ -239,6 +241,22 @@ function encodeData(data, mode, version, errorCorrectionLevel) {
 	}
 
 	return dataBuffer;
+}
+
+function displayQRAsSVG(matrix, id) {
+	const svg = document.getElementById(id);
+	svg.setAttribute('viewBox', `0 0 ${matrix.size * 8} ${matrix.size * 8}`);
+
+	let display = '<rect width="100%" height="100%" fill="#a0a0a0" shape-rendering="crispEdges"/>';
+
+	for(let i = 0; i < matrix.size; i++) {
+		for(let j = 0; j < matrix.size; j++) {
+			let color = (matrix.get(i, j) === true ? '#000000' : '#ffffff');
+			display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${color}" shape-rendering="crispEdges"/>`;
+		}
+	}
+
+	svg.innerHTML = display;
 }
 
 function generateErrorCorrectionBuffer(data, version, errorCorrectionLevel) {	
