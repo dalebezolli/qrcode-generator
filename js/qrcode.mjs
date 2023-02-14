@@ -52,6 +52,7 @@ function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
 	generateFunctionalPatterns(svg, qrCodeSize, version);
 	generateFinderPatterns(qrMatrix);
 	generateTimingPatterns(qrMatrix);
+	generateDarkPattern(qrMatrix, version);
 
 	generateDataPattern(svg, qrCodeSize, messageBuffer);
 
@@ -135,6 +136,10 @@ function generateTimingPatterns(matrix) {
 			}
 		}
 	}
+}
+
+function generateDarkPattern(matrix, version) {
+	matrix.set(8, (version * 4 + 9), true, false);
 }
 
 function generateDataPattern(svg, size, messageBuffer, message) {
