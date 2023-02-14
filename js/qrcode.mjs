@@ -47,7 +47,7 @@ function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
 
 	generateFunctionalPatterns(svg, qrCodeSize, version);
 
-	generateDataPattern(svg, qrCodeSize, messageBuffer, messageBitString);
+	generateDataPattern(svg, qrCodeSize, messageBuffer);
 
 	generateFormatPattern(svg, qrCodeSize, errorCorrectionLevel, mask);
 
