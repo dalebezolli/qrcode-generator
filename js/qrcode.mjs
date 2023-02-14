@@ -1,6 +1,7 @@
 import {errorCorrectionLevel as ecLevel} from "./error-correction.mjs";
 import {mask as maskData} from "./mask.mjs";
 import { DataBuffer } from "./databuffer.mjs";
+import { DataMatrix } from "./datamatrix.mjs";
 
 function generate(data, options, svgId) {
 	if(typeof data !== 'string' || data === '') {
@@ -27,7 +28,7 @@ function generate(data, options, svgId) {
 
 	const qrCodeSvg = document.getElementById(svgId);
 	const mode = '0010';
-	genereateQRCode(qrCodeSvg, data, version, mode, errorCorrectionLevel, mask);
+	const qrMatrix = genereateQRCode(qrCodeSvg, data, version, mode, errorCorrectionLevel, mask);
 }
 
 function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
@@ -37,6 +38,7 @@ function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
     const dataBuffer = encodeData(data, mode, version, errorCorrectionLevel);
 	const errorCorrectionBuffer = generateErrorCorrectionBuffer(dataBuffer.buffer, version, errorCorrectionLevel);
 	const messageBuffer = new DataBuffer(dataBuffer.length / 8 + errorCorrectionBuffer.length / 8);
+	const qrMatrix = new DataMatrix(qrCodeSize);
 
 	dataBuffer.buffer.forEach(byte => {
 		messageBuffer.push(byte, 8);
@@ -46,12 +48,15 @@ function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
 	});
 
 	generateFunctionalPatterns(svg, qrCodeSize, version);
+	generateFinderPatterns(qrMatrix);
 
 	generateDataPattern(svg, qrCodeSize, messageBuffer);
 
 	generateFormatPattern(svg, qrCodeSize, errorCorrectionLevel, mask);
 
 	generateMaskPattern(svg, qrCodeSize, mask);
+
+	return qrMatrix;
 }
 
 function generateFunctionalPatterns(svg, size, version) {
@@ -91,6 +96,28 @@ function generateFunctionalPatterns(svg, size, version) {
 	}
 
 	svg.innerHTML = display;
+}
+
+function generateFinderPatterns(matrix) {
+	for(let i = 0; i < matrix.size; i++) {
+		for(let j = 0; j < matrix.size; j++) {
+			if(i < 7 && j < 7 || i > matrix.size - 8 && j < 7 || i < 7 && j > matrix.size - 8) {
+				let finderStartX = (i < 7) ? 0 : matrix.size - 7;
+				let finderStartY = (j < 7) ? 0 : matrix.size - 7;
+
+				let data = false;
+				if(i === finderStartX || i === finderStartX + 6 || j === finderStartY || j === finderStartY + 6) {
+					data = true;
+				}
+
+				if(i > finderStartX + 1 && i < finderStartX + 5 && j > finderStartY + 1 && j < finderStartY + 5) {
+					data = true;
+				}
+
+				matrix.set(i, j, data, false);
+			}
+		}
+	}
 }
 
 function generateDataPattern(svg, size, messageBuffer, message) {
