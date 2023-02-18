@@ -2,6 +2,7 @@ import {errorCorrectionLevel as ecLevel} from "./error-correction.mjs";
 import {mask as maskData} from "./mask.mjs";
 import { DataBuffer } from "./databuffer.mjs";
 import { DataMatrix } from "./datamatrix.mjs";
+import { getQRCodeSize } from "./version.mjs";
 
 function generate(data, options, svgId) {
 	if(typeof data !== 'string' || data === '') {
@@ -34,7 +35,7 @@ function generate(data, options, svgId) {
 
 function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
 	console.log(`GENERATE QR CODE v${version} level-${Object.keys(ecLevel).find(key => ecLevel[key] === errorCorrectionLevel)} mode-${mode}`);
-	const qrCodeSize = (version * 4) + 17;
+	const qrCodeSize = getQRCodeSize(version);
 
     const dataBuffer = encodeData(data, mode, version, errorCorrectionLevel);
 	const errorCorrectionBuffer = generateErrorCorrectionBuffer(dataBuffer.buffer, version, errorCorrectionLevel);
@@ -51,11 +52,11 @@ function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
 	generateFinderPatterns(qrMatrix);
 	generateTimingPatterns(qrMatrix);
 	generateDarkPattern(qrMatrix, version);
-	generateFormatPattern(qrMatrix, errorCorrectionLevel, mask);
+	// generateFormatPattern(qrMatrix, errorCorrectionLevel, mask);
 
-	generateDataPattern(qrMatrix, messageBuffer);
+	// generateDataPattern(qrMatrix, messageBuffer);
 
-	generateMaskPattern(qrMatrix, mask);
+	// generateMaskPattern(qrMatrix, mask);
 
 	return qrMatrix;
 }
