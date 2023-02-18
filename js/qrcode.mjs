@@ -26,14 +26,13 @@ function generate(data, options, svgId) {
 		}
 	}
 
-	const qrCodeSvg = document.getElementById(svgId);
 	const mode = '0010';
-	const qrMatrix = genereateQRCode(qrCodeSvg, data, version, mode, errorCorrectionLevel, mask);
+	const qrMatrix = genereateQRCode(data, version, mode, errorCorrectionLevel, mask);
 
-	displayQRAsSVG(qrMatrix, 'newSVG');
+	displayQRAsSVG(qrMatrix, 'svg');
 }
 
-function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
+function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
 	console.log(`GENERATE QR CODE v${version} level-${Object.keys(ecLevel).find(key => ecLevel[key] === errorCorrectionLevel)} mode-${mode}`);
 	const qrCodeSize = (version * 4) + 17;
 
@@ -49,57 +48,16 @@ function genereateQRCode(svg, data, version, mode, errorCorrectionLevel, mask) {
 		messageBuffer.push(byte, 8);
 	});
 
-	generateFunctionalPatterns(svg, qrCodeSize, version);
 	generateFinderPatterns(qrMatrix);
 	generateTimingPatterns(qrMatrix);
 	generateDarkPattern(qrMatrix, version);
+	generateFormatPattern(qrMatrix, errorCorrectionLevel, mask);
 
-	generateDataPattern(svg, qrCodeSize, messageBuffer);
+	generateDataPattern(qrMatrix, messageBuffer);
 
-	generateFormatPattern(svg, qrCodeSize, errorCorrectionLevel, mask);
-
-	generateMaskPattern(svg, qrCodeSize, mask);
+	generateMaskPattern(qrMatrix, mask);
 
 	return qrMatrix;
-}
-
-function generateFunctionalPatterns(svg, size, version) {
-	svg.setAttribute('viewBox', `0 0 ${size * 8} ${size * 8}`);
-
-	let display = '<rect width="100%" height="100%" fill="#a0a0a0" shape-rendering="crispEdges"/>';
-	for(let i = 0; i < size; i++) {
-		for(let j = 0; j < size; j++) {
-			if(i < 7 && j < 7 || i > size - 8 && j < 7 || i < 7 && j > size - 8) {
-				let finderStartX = (i < 7) ? 0 : size - 7;
-				let finderStartY = (j < 7) ? 0 : size - 7;
-
-				let currentColor = '#ffffff';
-				if(i === finderStartX || i === finderStartX + 6 || j === finderStartY || j === finderStartY + 6) {
-					currentColor = '#000000';
-				}
-
-				if(i > finderStartX + 1 && i < finderStartX + 5 && j > finderStartY + 1 && j < finderStartY + 5) {
-					currentColor = '#000000';
-				}
-
-				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${currentColor}" shape-rendering="crispEdges"/>`;
-			} else if((j === 7 && (i < 8 || i > size - 9) || j === size - 8 && i < 8) || (i === 7 && (j < 8 || j > size - 9) || i === size - 8 && j < 8)) {
-				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#ffffff" shape-rendering="crispEdges"/>`;
-			} else if(j === 6 && (i > 7 && i < size - 8) || i === 6 && (j > 7 && j < size - 8)) {
-				const location = (j > i) ? j : i;
-				const color = (location % 2 === 0) ? '#000000' : '#ffffff';
-				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${color}"/>`;
-			} else if(i === 8 && j === version*4 + 9) {
-				display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="#000000"/>`;
-			} else if(j === 8 && (i < 8 && i != 6 || i > size - 9)) {
-				display += `<rect class="formatModule" x="${i*8}" y="${j*8}" width="8" height="8" fill="#0000ff"/>`;
-			} else if(i === 8 && (j < 9 && j !== 6 || j > size - 8)) {
-				display += `<rect class="formatModule" x="${i*8}" y="${j*8}" width="8" height="8" fill="#0000ff"/>`;
-			}		
-		}
-	}
-
-	svg.innerHTML = display;
 }
 
 function generateFinderPatterns(matrix) {
@@ -139,21 +97,23 @@ function generateTimingPatterns(matrix) {
 }
 
 function generateDarkPattern(matrix, version) {
-	matrix.set(8, (version * 4 + 9), true, false);
+	matrix.set((version * 4 + 9), 8, true, false);
 }
 
-function generateDataPattern(svg, size, messageBuffer, message) {
-	let messageBitPosX = size - 1;
-	let messageBitPosY = size - 1;
+function generateDataPattern(matrix, messageBuffer) {
+	let messageBitPosX = matrix.size - 1;
+	let messageBitPosY = matrix.size - 1;
 	let direction = 1;
-	let display = '';
 
 	for(let n = 0; n < messageBuffer.length; n++) {
 		const currentCharacter = messageBuffer.readBit(n);
-		const color = (currentCharacter === 1) ? '#000000' : '#ffffff';
+		const bit = currentCharacter === 1;
 
-		display += `<rect class="dataModule" x="${messageBitPosX*8}" y="${messageBitPosY*8}" width="8" height="8" fill="${color}"/>`;
+		// Add bit on location
+		matrix.set(messageBitPosY, messageBitPosX, bit, true);
+		console.log(`STEP ${n}: [${messageBitPosX}, ${messageBitPosY}] = ${matrix.get(messageBitPosY, messageBitPosX)}`);
 
+		// Move correctly???
 		if(n % 2 === 0) {
 			messageBitPosX -= 1;
 		} else {
@@ -161,31 +121,34 @@ function generateDataPattern(svg, size, messageBuffer, message) {
 			messageBitPosY -= direction;
 		}
 
+		// If we reach horisontal timing pattern, chill
 		if(messageBitPosY === 6) {
 			messageBitPosY -= direction;
 		}
 
-		if(document.querySelector(`rect[x='${messageBitPosX*8}'][y='${messageBitPosY*8}']`) || messageBitPosY > size - 1 || messageBitPosY < 0) {
+		// If we reach vertical timing pattern, chill
+		if(messageBitPosX === 6) {
+			messageBitPosX--;
+		}
+
+		// If there already exists a bit or we're out of horisontal bounds
+		if(matrix.get(messageBitPosY, messageBitPosX) !== undefined || messageBitPosY > matrix.size - 1 || messageBitPosY < 0) {
 			messageBitPosX -= 2;
 			direction = (direction === 1) ? -1 : 1;
 			messageBitPosY -= direction;
 		}
-
-		if(messageBitPosX === 6) {
-			messageBitPosX--;
-		}
 	
-		if(messageBitPosX < 9 && (messageBitPosY > size - 9 || messageBitPosY < 8)) {
-			while(document.querySelector(`rect[x='${messageBitPosX*8}'][y='${messageBitPosY*8}']`)) {
+		// If we're on the last part of the message
+		if(messageBitPosX < 9 && (messageBitPosY > matrix.size - 9 || messageBitPosY < 8)) {
+			// Move up until there's nothing on top of us
+			while(matrix.get(messageBitPosY, messageBitPosX) !== undefined) {
 				messageBitPosY -= direction;
 			}
 		}
 	}
-
-	svg.innerHTML += display;
 }
 
-function generateFormatPattern(svg, size, errorCorrectionLevel, mask) {
+function generateFormatPattern(matrix, errorCorrectionLevel, mask) {
 	const formatString = errorCorrectionLevel.toString(2) + mask.mask;
 	const normalizedFormatString = formatString.slice(formatString.indexOf('1'), formatString.length) + '0'.repeat(10);
 	let payload = '10100110111';
@@ -206,29 +169,24 @@ function generateFormatPattern(svg, size, errorCorrectionLevel, mask) {
 	}
 
 	let formatYIndex = 0, formatXIndex = 0;
-	for(let i = 0; i < size; i++) {
-		for(let j = 0; j < size; j++) {
-			const formatModule = svg.querySelector(`.formatModule[x="${i*8}"][y="${j*8}"][fill="#0000ff"]`);
-
-			if(formatModule && i === 8) {
-				formatModule.setAttribute('fill', (maskedFormatString[formatYIndex++] === '0' ? '#ffffff' : '#000000'));
-				continue;
+	for(let i = 0; i < matrix.size; i++) {
+		for(let j = 0; j < matrix.size; j++) {
+			if(i === 8 && (j < 6 || (j > 6 && j < 9) || j > 13)) {
+				matrix.set(i, j, maskedFormatString[formatXIndex++] === '1', false);
 			}
 
-			if(formatModule && j === 8) {
-				formatModule.setAttribute('fill', (maskedFormatString[formatXIndex++] === '0' ? '#ffffff' : '#000000'));
+			if(j === 8 && (i < 6 || (i > 6 && i < 9) || i > 13)) {
+				matrix.set(i, j, maskedFormatString[formatYIndex++] === '1', false);
 			}
 		}
 	}
 }
 
-function generateMaskPattern(svg, size, mask) {
-	for(let i = 0; i < size; i++) {
-		for(let j = 0; j < size; j++) {
-			const dataModule = svg.querySelector(`.dataModule[x="${i*8}"][y="${j*8}"]`);
-
-			if(dataModule && mask.pattern(i, j) === 0) {
-				dataModule.setAttribute('fill', (dataModule.getAttribute('fill') === '#ffffff' ? '#000000' : '#ffffff'));
+function generateMaskPattern(matrix, mask) {
+	for(let i = 0; i < matrix.size; i++) {
+		for(let j = 0; j < matrix.size; j++) {
+			if(matrix.isMaskable(j, i) && mask.pattern(j, i) === 0) {
+				matrix.set(j, i, !matrix.get(j, i), true);
 			}
 		}
 	}
@@ -271,7 +229,7 @@ function displayQRAsSVG(matrix, id) {
 
 	for(let i = 0; i < matrix.size; i++) {
 		for(let j = 0; j < matrix.size; j++) {
-			let color = (matrix.get(i, j) === true ? '#000000' : '#ffffff');
+			let color = (matrix.get(j, i) === true ? '#000000' : '#ffffff');
 			display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${color}" shape-rendering="crispEdges"/>`;
 		}
 	}
