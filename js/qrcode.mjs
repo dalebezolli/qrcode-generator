@@ -1,8 +1,8 @@
-import {errorCorrectionLevel as ecLevel} from "./error-correction.mjs";
+import {errorCorrectionLevel as ecLevel, getTotalErrorCodeWords} from "./error-correction.mjs";
 import {mask as maskData} from "./mask.mjs";
 import { DataBuffer } from "./databuffer.mjs";
 import { DataMatrix } from "./datamatrix.mjs";
-import { getQRCodeSize } from "./version.mjs";
+import { getQRCodeSize, getQRCodeTotalCodeWords } from "./version.mjs";
 
 function generate(data, options, svgId) {
 	if(typeof data !== 'string' || data === '') {
@@ -194,7 +194,7 @@ function generateMaskPattern(matrix, mask) {
 }
 
 function encodeData(data, mode, version, errorCorrectionLevel) {
-	const maxDataBytesLength = getVersionInformation(version)[0].capacity[errorCorrectionLevel].message;
+	const maxDataBytesLength = getQRCodeTotalCodeWords(version) - getTotalErrorCodeWords(version, errorCorrectionLevel);
 	const dataBuffer = new DataBuffer(maxDataBytesLength);
 
 	if(mode !== '0010') return;
@@ -239,7 +239,7 @@ function displayQRAsSVG(matrix, id) {
 }
 
 function generateErrorCorrectionBuffer(data, version, errorCorrectionLevel) {	
-	const errorCorrectionBufferSize = getVersionInformation(version)[0].capacity[errorCorrectionLevel].error;
+	const errorCorrectionBufferSize = getTotalErrorCodeWords(version, errorCorrectionLevel);
 	const errorCorrectionBuffer = new DataBuffer(errorCorrectionBufferSize);
     let messageData = [...data];
 
@@ -321,16 +321,6 @@ const alphanumericMap = new Map([
 	['N', 23], ['O', 24], ['P', 25], ['Q', 26], ['R', 27], ['S', 28], ['T', 29], ['U', 30], ['V', 31], ['W', 32], ['X', 33], ['Y', 34], ['Z', 35],
 	[' ', 36], ['$', 37], ['%', 38], ['*', 39], ['+', 40], ['-', 41], ['.', 42], ['/', 43], [':', 44]
 ]);
-
-function getVersionInformation(version) {
-	// TODO: Find a way to generate this information instead of creating a map for each version
-	let versionInformation = new Map([
-		[1, [{mode: 'Alphanumeric', capacity: {0b01: {message: 19, error: 7}, 0b00: {message: 16, error: 10}, 0b11: {message: 13, error: 13}, 0b10: {message: 9, error: 17}}}]],
-		[2, [{mode: 'Alphanumeric', capacity: {0b01: {message: 34, error: 10}, 0b00: {message: 28, error: 16}, 0b11: {message: 22, error: 22}, 0b10: {message: 16, error: 28}}}]],
-	]);
-
-	return versionInformation.get(version);
-}
 
 function toBinary(number, bits) {
 	const binaryRepresentation = number.toString(2);
