@@ -52,6 +52,7 @@ function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
 	generateFinderPatterns(qrMatrix);
 	generateTimingPatterns(qrMatrix);
 	generateDarkPattern(qrMatrix, version);
+	generateAlginmentPatterns(qrMatrix, version);
 	// generateFormatPattern(qrMatrix, errorCorrectionLevel, mask);
 
 	// generateDataPattern(qrMatrix, messageBuffer);
@@ -99,6 +100,98 @@ function generateTimingPatterns(matrix) {
 
 function generateDarkPattern(matrix, version) {
 	matrix.set((version * 4 + 9), 8, true, false);
+}
+
+const ALIGNMENT_PATTERN_POSITIONS = [
+	6, 18,
+	6, 22,
+	6, 26,
+	6, 30,
+	6, 34,
+	6, 22, 38,
+	6, 24, 42,
+	6, 26, 46,
+	6, 28, 50,
+	6, 30, 54,
+	6, 32, 58,
+	6, 34, 62,
+	6, 26, 46, 66,
+	6, 26, 48, 70,
+	6, 26, 50, 74,
+	6, 30, 54, 78,
+	6, 30, 56, 82,
+	6, 30, 58, 86,
+	6, 34, 62, 90,
+	6, 28, 50, 72, 94,
+	6, 26, 50, 74, 98,
+	6, 30, 54, 78, 102,
+	6, 28, 54, 80, 106,
+	6, 32, 58, 84, 110,
+	6, 30, 58, 86, 114,
+	6, 34, 62, 90, 118,
+	6, 26, 50, 74, 98, 122,
+	6, 30, 54, 78, 102, 126,
+	6, 26, 52, 78, 104, 130,
+	6, 30, 56, 82, 108, 134,
+	6, 34, 60, 86, 112, 138,
+	6, 30, 58, 86, 114, 142,
+	6, 34, 62, 90, 118, 146,
+	6, 30, 54, 78, 102, 126, 150,
+	6, 24, 50, 76, 102, 126, 154,
+	6, 27, 54, 80, 106, 132, 158,
+	6, 32, 58, 84, 110, 136, 162,
+	6, 26, 54, 82, 110, 138, 166,
+	6, 30, 58, 86, 114, 142, 170,
+];
+
+function generateAlginmentPatterns(matrix, version) {
+	if(version < 2) return;
+
+	const alignmentCoordsCount = Math.floor(version / 7) + 2;
+
+	let alginmentCoordsSkipped = 0;
+	for(let i = 2; i < version; i++) {
+		alginmentCoordsSkipped += Math.floor(i / 7) + 2;
+	}
+
+	const unmatchedCoords = new Array(alignmentCoordsCount);
+	for(let i = 0; i < alignmentCoordsCount; i++) {
+		unmatchedCoords[i] = ALIGNMENT_PATTERN_POSITIONS[alginmentCoordsSkipped + i];
+	}
+
+	const matchedCoords = [];
+
+	for(let i = 0; i < alignmentCoordsCount; i++) {
+		for(let j = 0; j < alignmentCoordsCount; j++) {
+			if(
+				(unmatchedCoords[i] < 8 && unmatchedCoords[j] < 8)
+				|| (unmatchedCoords[i] < 8 && unmatchedCoords[j] > matrix.size - 8)
+				|| (unmatchedCoords[i] > matrix.size - 8 && unmatchedCoords[j] < 8)
+			) {
+				continue
+			}
+			matchedCoords.push([unmatchedCoords[i], unmatchedCoords[j]]);
+		}
+	}
+	console.log({matchedCoords});
+
+	for(let alignmentPattern = 0; alignmentPattern < matchedCoords.length; alignmentPattern++) {
+		const column = matchedCoords[alignmentPattern][0];
+		const row = matchedCoords[alignmentPattern][1];
+
+		for(let i = 0; i < matrix.size; i++) {
+			for(let j = 0; j < matrix.size; j++) {
+				if( 
+					(i === row && j === column)
+					|| ((i === row - 2 || i === row + 2) && (j >= column - 2 && j <= column + 2))
+					|| ((i > row - 2 && i < row + 2) && (j === column - 2 || j === column + 2))
+				) {
+					matrix.set(i, j, true, false);
+				}
+			}
+		}
+	}
+
 }
 
 function generateDataPattern(matrix, messageBuffer) {
