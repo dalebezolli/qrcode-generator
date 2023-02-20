@@ -53,7 +53,7 @@ function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
 	generateTimingPatterns(qrMatrix);
 	generateDarkPattern(qrMatrix, version);
 	generateAlginmentPatterns(qrMatrix, version);
-	// generateFormatPattern(qrMatrix, errorCorrectionLevel, mask);
+	generateFormatPattern(qrMatrix, errorCorrectionLevel, mask);
 
 	// generateDataPattern(qrMatrix, messageBuffer);
 
@@ -243,7 +243,10 @@ function generateDataPattern(matrix, messageBuffer) {
 }
 
 function generateFormatPattern(matrix, errorCorrectionLevel, mask) {
-	const formatString = errorCorrectionLevel.toString(2) + mask.mask;
+	const formatInformation = errorCorrectionLevel << 3 | mask.mask;
+
+	const formatString = '0'.repeat(5 - formatInformation.toString(2).length) +  formatInformation.toString(2);
+	console.log({formatString});
 	const normalizedFormatString = formatString.slice(formatString.indexOf('1'), formatString.length) + '0'.repeat(10);
 	let payload = '10100110111';
 
@@ -262,15 +265,15 @@ function generateFormatPattern(matrix, errorCorrectionLevel, mask) {
 		maskedFormatString[i] = ((formatDataMaskPattern[i] === '1') !== character) ? '1' : '0';
 	}
 
-	let formatYIndex = 0, formatXIndex = 0;
+	let formatXIndex = 0, formatYIndex = 0;
 	for(let i = 0; i < matrix.size; i++) {
 		for(let j = 0; j < matrix.size; j++) {
-			if(i === 8 && (j < 6 || (j > 6 && j < 9) || j > 13)) {
+			if(i === 8 && (j < 6 || (j > 6 && j < 8) || j > matrix.size - 9 )) {
 				matrix.set(i, j, maskedFormatString[formatXIndex++] === '1', false);
 			}
 
-			if(j === 8 && (i < 6 || (i > 6 && i < 9) || i > 13)) {
-				matrix.set(i, j, maskedFormatString[formatYIndex++] === '1', false);
+			if(j === 8 && (i < 6 || (i > 6 && i < 9) || i > matrix.size - 8)) {
+				matrix.set(i, j, maskedFormatString[formatYIndex--] === '1', false);
 			}
 		}
 	}
