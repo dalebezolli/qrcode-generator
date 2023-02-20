@@ -55,9 +55,9 @@ function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
 	generateAlginmentPatterns(qrMatrix, version);
 	generateFormatPattern(qrMatrix, errorCorrectionLevel, mask);
 
-	// generateDataPattern(qrMatrix, messageBuffer);
+	generateDataPattern(qrMatrix, messageBuffer);
 
-	// generateMaskPattern(qrMatrix, mask);
+	generateMaskPattern(qrMatrix, mask);
 
 	return qrMatrix;
 }
@@ -195,50 +195,46 @@ function generateAlginmentPatterns(matrix, version) {
 }
 
 function generateDataPattern(matrix, messageBuffer) {
-	let messageBitPosX = matrix.size - 1;
-	let messageBitPosY = matrix.size - 1;
-	let direction = 1;
+	let column = matrix.size - 1;
+	let row = matrix.size - 1;
 
-	for(let n = 0; n < messageBuffer.length; n++) {
-		const currentCharacter = messageBuffer.readBit(n);
-		const bit = currentCharacter === 1;
+	let direction = -1;
+	let subColumn = 0;
+	let bitPos = 0;
 
-		// Add bit on location
-		matrix.set(messageBitPosY, messageBitPosX, bit, true);
-		console.log(`STEP ${n}: [${messageBitPosX}, ${messageBitPosY}] = ${matrix.get(messageBitPosY, messageBitPosX)}`);
-
-		// Move correctly???
-		if(n % 2 === 0) {
-			messageBitPosX -= 1;
-		} else {
-			messageBitPosX += 1;
-			messageBitPosY -= direction;
+	while(bitPos < messageBuffer.length) {
+		if(subColumn > 1) {
+			row = row + direction;
+			subColumn = 0;
 		}
 
-		// If we reach horisontal timing pattern, chill
-		if(messageBitPosY === 6) {
-			messageBitPosY -= direction;
+		if(
+			(row < 9 && (column > matrix.size - 9 || column < 9)) 
+			|| (row < 0 && (column > 8 && column < matrix.size - 8)) 
+			|| (row > matrix.size - 1 && column > 8) 
+			|| (row > matrix.size - 9 && column < 9)
+		) {
+			column -= 2;
+			direction = direction*(-1);
+			row += direction;
 		}
 
-		// If we reach vertical timing pattern, chill
-		if(messageBitPosX === 6) {
-			messageBitPosX--;
+		while(row > matrix.size - 9 && column < 9) {
+			row += direction;
+		}
+		
+		if(row === 6) {
+			row += direction;
 		}
 
-		// If there already exists a bit or we're out of horisontal bounds
-		if(matrix.get(messageBitPosY, messageBitPosX) !== undefined || messageBitPosY > matrix.size - 1 || messageBitPosY < 0) {
-			messageBitPosX -= 2;
-			direction = (direction === 1) ? -1 : 1;
-			messageBitPosY -= direction;
+		if(column === 6) {
+			column -= 1;
 		}
-	
-		// If we're on the last part of the message
-		if(messageBitPosX < 9 && (messageBitPosY > matrix.size - 9 || messageBitPosY < 8)) {
-			// Move up until there's nothing on top of us
-			while(matrix.get(messageBitPosY, messageBitPosX) !== undefined) {
-				messageBitPosY -= direction;
-			}
-		}
+
+		matrix.set(row, column - subColumn, messageBuffer.readBit(bitPos) === 1, true);
+
+		subColumn++;
+		bitPos++;
 	}
 }
 
