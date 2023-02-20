@@ -34,7 +34,6 @@ function generate(data, options, svgId) {
 }
 
 function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
-	console.log(`GENERATE QR CODE v${version} level-${Object.keys(ecLevel).find(key => ecLevel[key] === errorCorrectionLevel)} mode-${mode}`);
 	const qrCodeSize = getQRCodeSize(version);
 
     const dataBuffer = encodeData(data, mode, version, errorCorrectionLevel);
@@ -173,7 +172,6 @@ function generateAlginmentPatterns(matrix, version) {
 			matchedCoords.push([unmatchedCoords[i], unmatchedCoords[j]]);
 		}
 	}
-	console.log({matchedCoords});
 
 	for(let alignmentPattern = 0; alignmentPattern < matchedCoords.length; alignmentPattern++) {
 		const column = matchedCoords[alignmentPattern][0];
@@ -242,7 +240,6 @@ function generateFormatPattern(matrix, errorCorrectionLevel, mask) {
 	const formatInformation = errorCorrectionLevel << 3 | mask.mask;
 
 	const formatString = '0'.repeat(5 - formatInformation.toString(2).length) +  formatInformation.toString(2);
-	console.log({formatString});
 	const normalizedFormatString = formatString.slice(formatString.indexOf('1'), formatString.length) + '0'.repeat(10);
 	let payload = '10100110111';
 
@@ -261,7 +258,7 @@ function generateFormatPattern(matrix, errorCorrectionLevel, mask) {
 		maskedFormatString[i] = ((formatDataMaskPattern[i] === '1') !== character) ? '1' : '0';
 	}
 
-	let formatXIndex = 0, formatYIndex = 0;
+	let formatXIndex = 0, formatYIndex = maskedFormatString.length - 1;
 	for(let i = 0; i < matrix.size; i++) {
 		for(let j = 0; j < matrix.size; j++) {
 			if(i === 8 && (j < 6 || (j > 6 && j < 8) || j > matrix.size - 9 )) {
