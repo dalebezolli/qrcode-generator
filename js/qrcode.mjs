@@ -41,6 +41,12 @@ function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
 	const messageBuffer = new DataBuffer(dataBuffer.length / 8 + errorCorrectionBuffer.length / 8);
 	const qrMatrix = new DataMatrix(qrCodeSize);
 
+	for(let column = 0; column < qrMatrix.size; column++) {
+		for(let row = 0; row < qrMatrix.size; row++) {
+			qrMatrix.set(row, column, false, true);
+		}
+	}
+
 	dataBuffer.buffer.forEach(byte => {
 		messageBuffer.push(byte, 8);
 	});
@@ -231,7 +237,7 @@ function generateDataPattern(matrix, messageBuffer) {
 			column -= 1;
 		}
 
-		if(matrix.get(row, column - subColumn) === undefined) {
+		if(matrix.isMaskable(row, column - subColumn) === true) {
 			matrix.set(row, column - subColumn, messageBuffer.readBit(bitPos) === 1, true);
 			bitPos++;
 			subColumn++;
@@ -239,7 +245,6 @@ function generateDataPattern(matrix, messageBuffer) {
 			subColumn++;
 			continue;
 		}
-
 	}
 }
 
