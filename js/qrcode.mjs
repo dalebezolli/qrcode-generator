@@ -62,7 +62,7 @@ function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
 
 	generateDataPattern(qrMatrix, messageBuffer);
 
-	// generateMaskPattern(qrMatrix, mask);
+	generateMaskPattern(qrMatrix, mask);
 
 	return qrMatrix;
 }
@@ -331,8 +331,7 @@ function displayQRAsSVG(matrix, id) {
 
 	for(let i = 0; i < matrix.size; i++) {
 		for(let j = 0; j < matrix.size; j++) {
-			let color = (matrix.get(j, i) === true ? '#000000' : (matrix.get(j, i) === false ? '#ffffff' : '#cacaca'));
-			// let color = (matrix.get(j, i) === true ? '#000000' : '#ffffff');
+			let color = (matrix.get(j, i) === true ? '#000000' : '#ffffff');
 			display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${color}" shape-rendering="crispEdges"/>`;
 		}
 	}
