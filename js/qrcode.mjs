@@ -185,6 +185,8 @@ function generateAlginmentPatterns(matrix, version) {
 					|| ((i > row - 2 && i < row + 2) && (j === column - 2 || j === column + 2))
 				) {
 					matrix.set(i, j, true, false);
+				} else if(i > row - 2 && i < row + 2 && j > column - 2 && j < column + 2) {
+					matrix.set(i, j, false, false);
 				}
 			}
 		}
