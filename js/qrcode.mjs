@@ -56,7 +56,7 @@ function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
 
 	generateDataPattern(qrMatrix, messageBuffer);
 
-	generateMaskPattern(qrMatrix, mask);
+	// generateMaskPattern(qrMatrix, mask);
 
 	return qrMatrix;
 }
@@ -298,7 +298,7 @@ function encodeData(data, mode, version, errorCorrectionLevel) {
 	dataBuffer.push(2, 4);
 	dataBuffer.push(data.length, 9);
 
-	for(let i = 0; i + 2 < data.length; i += 2) {
+	for(let i = 0; i + 2 <= data.length; i += 2) {
 		let number = alphanumericMap.get(data[i].toUpperCase()) * 45;
 		number += alphanumericMap.get(data[i + 1].toUpperCase());
 		dataBuffer.push(number, 11);
@@ -326,7 +326,8 @@ function displayQRAsSVG(matrix, id) {
 
 	for(let i = 0; i < matrix.size; i++) {
 		for(let j = 0; j < matrix.size; j++) {
-			let color = (matrix.get(j, i) === true ? '#000000' : '#ffffff');
+			let color = (matrix.get(j, i) === true ? '#000000' : (matrix.get(j, i) === false ? '#ffffff' : '#cacaca'));
+			// let color = (matrix.get(j, i) === true ? '#000000' : '#ffffff');
 			display += `<rect x="${i*8}" y="${j*8}" width="8" height="8" fill="${color}" shape-rendering="crispEdges"/>`;
 		}
 	}
