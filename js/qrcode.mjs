@@ -296,6 +296,7 @@ function generateMaskPattern(matrix, mask) {
 
 function encodeData(data, mode, version, errorCorrectionLevel) {
 	const maxDataBytesLength = getQRCodeTotalCodeWords(version) - getTotalErrorCodeWords(version, errorCorrectionLevel);
+	const maxDataBitsLength = maxDataBytesLength * 8;
 	const dataBuffer = new DataBuffer(maxDataBytesLength);
 
 	if(mode !== '0010') return;
@@ -313,9 +314,9 @@ function encodeData(data, mode, version, errorCorrectionLevel) {
 		dataBuffer.push(alphanumericMap.get(data[data.length - 1].toUpperCase()), 6);
 	}
 
-	dataBuffer.push(0, 8 - dataBuffer.length % 8);
+	dataBuffer.push(0, Math.min(4, (maxDataBitsLength - dataBuffer.length)));
+	dataBuffer.push(0, (8 - dataBuffer.length % 8));
 
-	const maxDataBitsLength = maxDataBytesLength * 8;
 	for(let i = 0; dataBuffer.length < maxDataBitsLength; i++) {
 		dataBuffer.push((i % 2 === 0 ? 0b11101100 : 0b00010001), 8);
 	}
