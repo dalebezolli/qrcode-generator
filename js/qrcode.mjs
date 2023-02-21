@@ -231,10 +231,15 @@ function generateDataPattern(matrix, messageBuffer) {
 			column -= 1;
 		}
 
-		matrix.set(row, column - subColumn, messageBuffer.readBit(bitPos) === 1, true);
+		if(matrix.get(row, column - subColumn) === undefined) {
+			matrix.set(row, column - subColumn, messageBuffer.readBit(bitPos) === 1, true);
+			bitPos++;
+			subColumn++;
+		} else {
+			subColumn++;
+			continue;
+		}
 
-		subColumn++;
-		bitPos++;
 	}
 }
 
