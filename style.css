@@ -1,0 +1,63 @@
+/* RESET */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0; 
+    padding: 0;
+}
+
+html, body {
+    min-height: 100vh;
+}
+
+img, picture, video, svg {
+    max-width: 100%;
+    display: block;
+}
+
+button, input, textarea, select {
+    font: inherit;
+}
+
+p, h1, h2, h3, h4, h5, h6 {
+    overflow-wrap: break-word;
+}
+
+/* DESIGN */
+:root {
+	--color-primary: hsl(263, 77%, 65%);
+	--color-primary-o25: hsla(263, 77%, 65%, 0.251);
+
+	--color-netural-100: hsl(0, 0%, 85%);
+	--color-netural-400: hsl(265, 9%, 75%);
+	--color-netural-400-10: hsl(265, 9%, 75%, .1);
+	--color-netural-400-30: hsl(265, 9%, 75%, .3);
+	--color-netural-600: hsl(247, 10%, 34%);
+	--color-netural-700: hsl(248, 12%, 24%);
+	--color-netural-800: hsl(255, 7%, 11%);
+	--color-netural-900: hsl(255, 11%, 7%);
+	--color-netural-900-90: hsla(255, 11%, 7%, 0.9);
+
+	--color-red-400: hsl(15, 100%, 44%);
+	--color-red-800-25: hsla(15, 100%, 18%, .25);
+
+	--color-green-400: hsl(132, 80%, 61%);
+	--color-green-600-50: hsla(132, 46%, 42%, .5);
+
+	--ff-primary: 'Poppins', sans-serif;
+
+	--spacing-1x: 1rem; 
+	--spacing-2x: 2rem; 
+	--spacing-3x: 3rem;
+	--spacing-4x: 4rem;
+	--spacing-6x: 6rem;
+	--spacing-8x: 8rem;
+
+	--border-radius: .25rem;
+}
+
+body {
+	font-family: var(--ff-primary);
+	color: var(--color-netural-400);
+
+	background-color: var(--color-netural-900);
+}
