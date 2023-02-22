@@ -501,18 +501,46 @@ function runFourthTest(matrix) {
 	return score;
 }
 
+const DATA_LENGTH_BYTES = new Map([
+	[0b0010, [9, 11, 13]],
+	[0b0100, [8, 16, 16]]
+]);
+
 function encodeData(data, version, errorCorrectionLevel) {
 	const maxDataBytesLength = getQRCodeTotalCodeWords(version) - getTotalErrorCodeWords(version, errorCorrectionLevel);
 	const maxDataBitsLength = maxDataBytesLength * 8;
 	const dataBuffer = new DataBuffer(maxDataBytesLength);
 
-	const mode = 0b0100;
+	let mode;
+	let dataLengthBytes;
+
+	const alnumRegex = new RegExp('^[A-Z0-9 $%*+-.\/:]*$', 'g');
+	if(alnumRegex.test(data)) {
+		mode = 0b0010;
+	} else {
+		mode = 0b0100;
+	}
+	
+	if(version < 10) {
+		dataLengthBytes = DATA_LENGTH_BYTES.get(mode)[0];
+	} else if(version < 27) {
+		dataLengthBytes = DATA_LENGTH_BYTES.get(mode)[1];
+	} else {
+		dataLengthBytes = DATA_LENGTH_BYTES.get(mode)[2];
+	}
+
 
 	dataBuffer.push(mode, 4);
-	dataBuffer.push(data.length, 8);
+	dataBuffer.push(data.length, dataLengthBytes);
 
-	// encodeAlphanumericData(dataBuffer, data);
-	encodeByteData(dataBuffer, data);
+	switch(mode) {
+		case 0b0010:
+			encodeAlphanumericData(dataBuffer, data);
+			break;
+		case 0b0100:
+			encodeByteData(dataBuffer, data);
+			break;
+	}
 
 	dataBuffer.push(0, Math.min(4, (maxDataBitsLength - dataBuffer.length)));
 	dataBuffer.push(0, (8 - dataBuffer.length % 8) % 8);
