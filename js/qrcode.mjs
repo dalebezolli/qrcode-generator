@@ -306,10 +306,11 @@ function generateFormatPattern(matrix, errorCorrectionLevel, mask) {
 }
 
 function generateMaskPattern(matrix, mask) {
-	for(let i = 0; i < matrix.size; i++) {
-		for(let j = 0; j < matrix.size; j++) {
-			if(matrix.isMaskable(j, i) && mask.pattern(j, i) === 0) {
-				matrix.set(j, i, !matrix.get(j, i), true);
+	console.log({mask});
+	for(let row = 0; row < matrix.size; row++) {
+		for(let col = 0; col < matrix.size; col++) {
+			if(matrix.isMaskable(row, col) && mask.pattern(row, col) === 0) {
+				matrix.set(row, col, !matrix.get(row, col), true);
 			}
 		}
 	}
