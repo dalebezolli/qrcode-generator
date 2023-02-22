@@ -28,16 +28,15 @@ function generate(data, options) {
 		}
 	}
 
-	const mode = '0010';
-	const qrMatrix = genereateQRCode(data, version, mode, errorCorrectionLevel, mask);
+	const qrMatrix = genereateQRCode(data, version, errorCorrectionLevel, mask);
 
 	return qrMatrix;
 }
 
-function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
+function genereateQRCode(data, version, errorCorrectionLevel, mask) {
 	const qrCodeSize = getQRCodeSize(version);
 
-    const dataBuffer = encodeData(data, mode, version, errorCorrectionLevel);
+    const dataBuffer = encodeData(data, version, errorCorrectionLevel);
 	const errorCorrectionBuffer = generateErrorCorrectionBuffer(dataBuffer.buffer, version, errorCorrectionLevel);
 	const messageBuffer = new DataBuffer(dataBuffer.length / 8 + errorCorrectionBuffer.length / 8);
 	const qrMatrix = new DataMatrix(qrCodeSize);
@@ -502,25 +501,15 @@ function runFourthTest(matrix) {
 	return score;
 }
 
-function encodeData(data, mode, version, errorCorrectionLevel) {
+function encodeData(data, version, errorCorrectionLevel) {
 	const maxDataBytesLength = getQRCodeTotalCodeWords(version) - getTotalErrorCodeWords(version, errorCorrectionLevel);
 	const maxDataBitsLength = maxDataBytesLength * 8;
 	const dataBuffer = new DataBuffer(maxDataBytesLength);
 
-	if(mode !== '0010') return;
-
 	dataBuffer.push(2, 4);
 	dataBuffer.push(data.length, 9);
 
-	for(let i = 0; i + 2 <= data.length; i += 2) {
-		let number = alphanumericMap.get(data[i].toUpperCase()) * 45;
-		number += alphanumericMap.get(data[i + 1].toUpperCase());
-		dataBuffer.push(number, 11);
-	}
-
-	if(data.length % 2) {
-		dataBuffer.push(alphanumericMap.get(data[data.length - 1].toUpperCase()), 6);
-	}
+	encodeAlphanumericData(dataBuffer, data);
 
 	dataBuffer.push(0, Math.min(4, (maxDataBitsLength - dataBuffer.length)));
 	dataBuffer.push(0, (8 - dataBuffer.length % 8));
@@ -530,6 +519,18 @@ function encodeData(data, mode, version, errorCorrectionLevel) {
 	}
 
 	return dataBuffer;
+}
+
+function encodeAlphanumericData(dataBuffer, data) {
+	for(let i = 0; i + 2 <= data.length; i += 2) {
+		let number = alphanumericMap.get(data[i].toUpperCase()) * 45;
+		number += alphanumericMap.get(data[i + 1].toUpperCase());
+		dataBuffer.push(number, 11);
+	}
+
+	if(data.length % 2) {
+		dataBuffer.push(alphanumericMap.get(data[data.length - 1].toUpperCase()), 6);
+	}
 }
 
 function displayQRAsSVG(matrix, id) {
