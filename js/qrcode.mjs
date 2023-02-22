@@ -506,13 +506,16 @@ function encodeData(data, version, errorCorrectionLevel) {
 	const maxDataBitsLength = maxDataBytesLength * 8;
 	const dataBuffer = new DataBuffer(maxDataBytesLength);
 
-	dataBuffer.push(2, 4);
-	dataBuffer.push(data.length, 9);
+	const mode = 0b0100;
 
-	encodeAlphanumericData(dataBuffer, data);
+	dataBuffer.push(mode, 4);
+	dataBuffer.push(data.length, 8);
+
+	// encodeAlphanumericData(dataBuffer, data);
+	encodeByteData(dataBuffer, data);
 
 	dataBuffer.push(0, Math.min(4, (maxDataBitsLength - dataBuffer.length)));
-	dataBuffer.push(0, (8 - dataBuffer.length % 8));
+	dataBuffer.push(0, (8 - dataBuffer.length % 8) % 8);
 
 	for(let i = 0; dataBuffer.length < maxDataBitsLength; i++) {
 		dataBuffer.push((i % 2 === 0 ? 0b11101100 : 0b00010001), 8);
@@ -530,6 +533,12 @@ function encodeAlphanumericData(dataBuffer, data) {
 
 	if(data.length % 2) {
 		dataBuffer.push(alphanumericMap.get(data[data.length - 1].toUpperCase()), 6);
+	}
+}
+
+function encodeByteData(dataBuffer, data) {
+	for(let i = 0; i < data.length; i++) {
+		dataBuffer.push(data.charCodeAt(i), 8);
 	}
 }
 
