@@ -1,4 +1,4 @@
-import {generate} from "./js/qrcode.mjs";
+import { generate, displayQRAsSVG } from './js/qrcode.mjs';
 
 function generateQRCode() {
     const messageInputBox = document.getElementById('message');
@@ -14,12 +14,8 @@ function generateQRCode() {
 	const userData = messageInputBox.value;
 	const qrCodeSettings = {version, errorCorrectionLevel, mask: maskPattern};
 
-	generate(userData, qrCodeSettings, 'qrcode'); // TODO: Once qr code matrix generation is decoupled from qr code drawing delete the svgId
-}
-
-function drawQRToSVG(svgId) {
-	const qrCodeSvg = document.getElementById(svgId);
-
+	const qrCodeMatrix = generate(userData, qrCodeSettings);
+	displayQRAsSVG(qrCodeMatrix, 'svg');
 }
 
 document.querySelector('button').addEventListener('click', generateQRCode);

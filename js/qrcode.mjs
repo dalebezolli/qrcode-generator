@@ -1,10 +1,10 @@
-import {errorCorrectionLevel as ecLevel, getTotalErrorCodeWords} from "./error-correction.mjs";
-import {mask as maskData} from "./mask.mjs";
-import { DataBuffer } from "./databuffer.mjs";
-import { DataMatrix } from "./datamatrix.mjs";
-import { getQRCodeSize, getQRCodeTotalCodeWords } from "./version.mjs";
+import { errorCorrectionLevel as ecLevel, getTotalErrorCodeWords } from './error-correction.mjs';
+import { mask as maskData } from './mask.mjs';
+import { DataBuffer } from './databuffer.mjs';
+import { DataMatrix } from './datamatrix.mjs';
+import { getQRCodeSize, getQRCodeTotalCodeWords } from './version.mjs';
 
-function generate(data, options, svgId) {
+function generate(data, options) {
 	if(typeof data !== 'string' || data === '') {
 		throw Error('Data input must be a string');
 	}
@@ -31,7 +31,7 @@ function generate(data, options, svgId) {
 	const mode = '0010';
 	const qrMatrix = genereateQRCode(data, version, mode, errorCorrectionLevel, mask);
 
-	displayQRAsSVG(qrMatrix, 'svg');
+	return qrMatrix;
 }
 
 function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
@@ -637,4 +637,4 @@ function toBinary(number, bits) {
 	return (bits - binaryRepresentation.length >= 0 ) ? '0'.repeat(bits - binaryRepresentation.length) + binaryRepresentation : binaryRepresentation;
 }
 
-export {generate};
+export { generate, displayQRAsSVG };

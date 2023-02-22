@@ -20,4 +20,4 @@ class DataMatrix {
 	}
 }
 
-export {DataMatrix}
+export { DataMatrix }

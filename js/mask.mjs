@@ -9,4 +9,4 @@ const mask = [
 	{mask: 0b111, pattern: (row, column) => ((row + column) % 2 + (row * column) % 3) % 2},
 ]
 
-export {mask};
+export { mask };

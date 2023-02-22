@@ -19,4 +19,4 @@ class DataBuffer {
 	}
 }
 
-export {DataBuffer};
+export { DataBuffer };
