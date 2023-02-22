@@ -1,4 +1,4 @@
-import { generate, displayQRAsSVG } from './js/qrcode.mjs';
+import { generate, displayQRAsSVG } from './lib/qrcode.mjs';
 
 function generateQRCode() {
     const messageInputBox = document.getElementById('message');
