@@ -18,8 +18,9 @@ function generate(data, options, svgId) {
 			version = options.version;
 		}
 
-		if(!isNaN(options.mask) && options.mask >= 0 && options.mask <= 7) {
-			mask = maskData[options.mask];
+		if(!isNaN(options.mask) && options.mask >= -1 && options.mask <= 7) {
+			if(options.mask === -1) mask = {mask: -1};
+			else mask = maskData[options.mask];
 		}
 
 		if(typeof options.errorCorrectionLevel === 'string') {
@@ -58,11 +59,31 @@ function genereateQRCode(data, version, mode, errorCorrectionLevel, mask) {
 	generateTimingPatterns(qrMatrix);
 	generateDarkPattern(qrMatrix, version);
 	generateAlginmentPatterns(qrMatrix, version);
-	generateFormatPattern(qrMatrix, errorCorrectionLevel, mask);
 
 	generateDataPattern(qrMatrix, messageBuffer);
 
+	if(mask.mask === -1) {
+		let currentMask = 0;
+		const totalScores = new Array(8);
+		while(currentMask < maskData.length) {
+			const testMask = maskData[currentMask++];
+
+			generateMaskPattern(qrMatrix, testMask);
+			generateFormatPattern(qrMatrix, errorCorrectionLevel, testMask);
+			
+			totalScores[testMask.mask] = runFirstTest(qrMatrix);
+			totalScores[testMask.mask] += runSecondTest(qrMatrix);
+			totalScores[testMask.mask] += runThirdTest(qrMatrix);
+			totalScores[testMask.mask] += runFourthTest(qrMatrix);
+
+			generateMaskPattern(qrMatrix, testMask);
+		}
+		mask = maskData[totalScores.indexOf(Math.min(...totalScores))];
+	}
+
 	generateMaskPattern(qrMatrix, mask);
+
+	generateFormatPattern(qrMatrix, errorCorrectionLevel, mask);
 
 	return qrMatrix;
 }
@@ -292,6 +313,176 @@ function generateMaskPattern(matrix, mask) {
 			}
 		}
 	}
+}
+
+function runFirstTest(matrix) {
+	const SCORE_MULTIPLIER = 3;
+	const MIN_ELEMENTS_IN_SEQUENCE = 5;
+
+	let score = 0;
+	for(let row = 0; row < matrix.size; row++) {
+		let counter = 1;
+		let currentBit = matrix.get(row, 0);
+
+		for(let column = 1; column < matrix.size; column++) {
+			if(matrix.get(row, column) === currentBit) counter++;
+			else {
+				if(counter >= MIN_ELEMENTS_IN_SEQUENCE) {
+					score += SCORE_MULTIPLIER + (counter - MIN_ELEMENTS_IN_SEQUENCE);
+				}
+
+				counter = 1;
+				currentBit = !currentBit;
+			}
+
+			if(column === matrix.size - 1 && counter >= MIN_ELEMENTS_IN_SEQUENCE) {
+				score += SCORE_MULTIPLIER + (counter - MIN_ELEMENTS_IN_SEQUENCE);
+			}
+		}
+	}
+
+	for(let column = 0; column < 1; column++) {
+		let counter = 1;
+		let currentBit = matrix.get(0, column);
+
+		for(let row = 1; row < matrix.size; row++) {
+			if(matrix.get(row, column) === currentBit) counter++;
+			else {
+				if(counter >= MIN_ELEMENTS_IN_SEQUENCE) {
+					score += SCORE_MULTIPLIER + (counter - MIN_ELEMENTS_IN_SEQUENCE);
+				}
+
+				counter = 1;
+				currentBit = !currentBit;
+			}
+
+			if(column === matrix.size - 1 && counter >= MIN_ELEMENTS_IN_SEQUENCE) {
+				score += SCORE_MULTIPLIER + (counter - MIN_ELEMENTS_IN_SEQUENCE);
+			}
+		}
+	}
+	return score;
+}
+
+function runSecondTest(matrix) {
+	const SCORE_MULTIPLIER = 3;
+	let blocks = 0;
+
+	for(let row = 0; row < matrix.size - 1; row++) {
+		for(let column = 0; column < matrix.size - 1; column++) {
+			const topLeft = matrix.get(row, column);
+			const topRight = matrix.get(row, column + 1);
+			const bottomLeft = matrix.get(row + 1, column);
+			const bottomRight = matrix.get(row + 1, column + 1);
+
+			if((topLeft === topRight) && (topLeft === bottomRight) && (topLeft === bottomLeft)) {
+				blocks += 1;
+			}
+		}
+	}
+
+	return blocks * SCORE_MULTIPLIER;
+}
+
+function runThirdTest(matrix) {
+	const SCORE_MULTIPLIER = 40;
+	const PATTERN = [true, false, true, true, true, false, true];
+	const MIN_EMPTY_SPACE = 4;
+
+	let score = 0;
+	for(let row = 0; row < matrix.size; row++) {
+		let column = 0;
+		let patternPos = 0;
+
+		while(column < matrix.size) {
+			if(matrix.get(row, column) === PATTERN[patternPos]) {
+				patternPos++;
+			} else {
+				patternPos = 0;
+			}
+
+			if(patternPos === PATTERN.length) {
+				let rightWhite = 1;
+				while((rightWhite < MIN_EMPTY_SPACE || column + rightWhite < matrix.size) && matrix.get(row, column + rightWhite) === false) {
+					rightWhite++;
+				}
+
+				let leftWhite = 1;
+				while((leftWhite < MIN_EMPTY_SPACE || column - PATTERN.length - leftWhite > 0) && matrix.get(row, column - PATTERN.length + 1 - leftWhite) === false) {
+					leftWhite++;
+				}
+
+				if(rightWhite > MIN_EMPTY_SPACE || leftWhite > MIN_EMPTY_SPACE) {
+					score += SCORE_MULTIPLIER;
+				}
+			}
+
+			column++;
+		}
+	}
+
+	for(let column = 0; column < matrix.size; column++) {
+		let row = 0;
+		let patternPos = 0;
+
+		while(row < matrix.size) {
+			if(matrix.get(row, column) === PATTERN[patternPos]) {
+				patternPos++;
+			} else {
+				patternPos = 0;
+			}
+
+			if(patternPos === PATTERN.length) {
+				let rightWhite = 1;
+				while((rightWhite < MIN_EMPTY_SPACE || row + rightWhite < matrix.size) && matrix.get(row + rightWhite, column) === false) {
+					rightWhite++;
+				}
+
+				let leftWhite = 1;
+				while((leftWhite < MIN_EMPTY_SPACE || row - PATTERN.length - leftWhite > 0) && matrix.get(row - PATTERN.length + 1 - leftWhite, column) === false) {
+					leftWhite++;
+				}
+
+				if(rightWhite > MIN_EMPTY_SPACE || leftWhite > MIN_EMPTY_SPACE) {
+					score += SCORE_MULTIPLIER;
+				}
+			}
+
+			row++;
+		}
+	}
+
+	return score;
+}
+
+function runFourthTest(matrix) {
+	const SCORE_MULTIPLIER = 10;
+
+	let score = 0;
+	
+	const totalCells = matrix.size * matrix.size;
+	let totalDarkCells = 0;
+
+	for(let row = 0; row < matrix.size; row++) {
+		for(let column = 0; column < matrix.size; column++) {
+			if(matrix.get(row, column) === true) {
+				totalDarkCells++;
+			}
+		}
+	}
+
+	const percentageDarkCells = Math.round(totalDarkCells / totalCells * 100);
+	let smallestIncrement = percentageDarkCells;
+	let largestIncrement = percentageDarkCells;
+	while(smallestIncrement % 5 !== 0) {
+		smallestIncrement--;
+	}
+	while(largestIncrement % 5 !== 0) {
+		largestIncrement++;
+	}
+
+	score = Math.min(Math.abs(smallestIncrement - 50) / 5, Math.abs(largestIncrement - 50) / 5) * SCORE_MULTIPLIER;
+	return score;
 }
 
 function encodeData(data, mode, version, errorCorrectionLevel) {

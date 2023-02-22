@@ -9,7 +9,7 @@ function generateQRCode() {
 	const version = parseInt(versionInputBox.value) || 0;
 	const errorCorrectionLevel = errorCorrectionLevelInputBox.value;
 	// TODO: Remove mask pattern once best mask pattern detection is complete
-	const maskPattern = parseInt(maskPatternInputBox.value) - 1;
+	const maskPattern = parseInt(maskPatternInputBox.value);
 
 	const userData = messageInputBox.value;
 	const qrCodeSettings = {version, errorCorrectionLevel, mask: maskPattern};
