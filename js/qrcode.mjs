@@ -269,44 +269,60 @@ function generateDataPattern(matrix, messageBuffer) {
 	}
 }
 
+const formatPattern = [
+	'101010000010010', // M
+	'101000100100101', 
+	'101111001111100',
+	'101101101001011',
+	'100010111111001',
+	'100000011001110',
+	'100111110010111',
+	'100101010100000',
+	'111011111000100', // L
+	'111001011110011',
+	'111110110101010',
+	'111100010011101',
+	'110011000101111',
+	'110001100011000',
+	'110110001000001',
+	'110100101110110',
+	'001011010001001', // H
+	'001001110111110',
+	'001110011100111',
+	'001100111010000',
+	'000011101100010',
+	'000001001010101',
+	'000110100001100',
+	'000100000111011',
+	'011010101011111', // Q
+	'011000001101000',
+	'011111100110001',
+	'011101000000110',
+	'010010010110100',
+	'010000110000011',
+	'010111011011010',
+	'010101111101101',
+];
+
 function generateFormatPattern(matrix, errorCorrectionLevel, mask) {
 	const formatInformation = errorCorrectionLevel << 3 | mask.mask;
+	const formatString = formatPattern[formatInformation];
 
-	const formatString = '0'.repeat(5 - formatInformation.toString(2).length) +  formatInformation.toString(2);
-	const normalizedFormatString = formatString.slice(formatString.indexOf('1'), formatString.length) + '0'.repeat(10);
-	let payload = '10100110111';
-
-	let errorCorrectionWords = normalizedFormatString;
-	for(let i = 0; errorCorrectionWords.length >= payload.length; i++) {
-		const paddedPayload = payload + (payload.length < errorCorrectionWords.length ? '0'.repeat(errorCorrectionWords.length - payload.length) : '');
-		errorCorrectionWords = toBinary(parseInt(errorCorrectionWords, 2) ^ parseInt(paddedPayload, 2), 14);
-		errorCorrectionWords = errorCorrectionWords.slice(errorCorrectionWords.indexOf(1), errorCorrectionWords.length);
-	}
-
-	const formatDataMaskPattern = '101010000010010';
-	const formatStringWithErrorCorrection = formatString + errorCorrectionWords;
-	const maskedFormatString = [];
-	for(let i = 0; i < formatDataMaskPattern.length; i++) {
-		const character = formatStringWithErrorCorrection[i] === '1';
-		maskedFormatString[i] = ((formatDataMaskPattern[i] === '1') !== character) ? '1' : '0';
-	}
-
-	let formatXIndex = 0, formatYIndex = maskedFormatString.length - 1;
+	let formatXIndex = 0, formatYIndex = formatString.length - 1;
 	for(let i = 0; i < matrix.size; i++) {
 		for(let j = 0; j < matrix.size; j++) {
 			if(i === 8 && (j < 6 || (j > 6 && j < 8) || j > matrix.size - 9 )) {
-				matrix.set(i, j, maskedFormatString[formatXIndex++] === '1', false);
+				matrix.set(i, j, formatString.charAt(formatXIndex++) === '1', false);
 			}
 
 			if(j === 8 && (i < 6 || (i > 6 && i < 9) || i > matrix.size - 8)) {
-				matrix.set(i, j, maskedFormatString[formatYIndex--] === '1', false);
+				matrix.set(i, j, formatString.charAt(formatYIndex--) === '1', false);
 			}
 		}
 	}
 }
 
 function generateMaskPattern(matrix, mask) {
-	console.log({mask});
 	for(let row = 0; row < matrix.size; row++) {
 		for(let col = 0; col < matrix.size; col++) {
 			if(matrix.isMaskable(row, col) && mask.pattern(row, col) === 0) {
