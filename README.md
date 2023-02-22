@@ -2,7 +2,7 @@
 Just a simple qr code generation I've been building for learning purposes.
 
 ## Features
-- Inputs Types: Alphanumeric
+- Input Types: Automatic detection between alphanumeric and byte
 - Automatic & manual mask selection
 - Displays qrcode to svg
 
