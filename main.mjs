@@ -1,10 +1,11 @@
-import { generate, displayQRAsSVG } from './lib/qrcode.mjs';
+import { generate, drawSVG } from './lib/qrcode.mjs';
 
 function generateQRCode() {
     const messageInputBox = document.getElementById('message');
     const versionInputBox = document.getElementById('version');
     const errorCorrectionLevelInputBox = document.getElementById('errorCorrectionLevel');
     const maskPatternInputBox = document.getElementById('maskPattern');
+	const svgDiv = document.getElementById('svg');
 
 	const version = parseInt(versionInputBox.value) || 0;
 	const errorCorrectionLevel = errorCorrectionLevelInputBox.value;
@@ -15,7 +16,7 @@ function generateQRCode() {
 	const qrCodeSettings = {version, errorCorrectionLevel, mask: maskPattern};
 
 	const qrCodeData = generate(userData, qrCodeSettings);
-	displayQRAsSVG(qrCodeData.matrix, 'svg');
+	svgDiv.innerHTML = drawSVG(qrCodeData.matrix);
 }
 
 document.querySelector('button').addEventListener('click', generateQRCode);
