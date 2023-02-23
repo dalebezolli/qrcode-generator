@@ -19,4 +19,6 @@ API:
 Visit the [website](https://qrapi.vercel.app/) to use the interface or send a get request at ``https://qrapi.vercel.app/api/generate?text=<your text>`` and replace ``<your text>`` with your text.
 
 ### Personal Deployment
+The project has been compiled with canvas@2.9.0 and node@16.0.0 because of canvas having problems with [vercel](https://github.com/Automattic/node-canvas/issues/1779#issuecomment-895885846)
+
 Run ``npm run build`` to bundle the code and run it with a live server or ``vercel dev`` to support api requests.

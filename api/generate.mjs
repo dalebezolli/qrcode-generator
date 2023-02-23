@@ -1,5 +1,6 @@
 import { generate } from '../lib/qrcode.mjs';
-import { createCanvas } from 'canvas';
+import canvas from 'canvas';
+const { createCanvas } = canvas;
 
 export default function helper(req, res) {
     if(!Object.keys(req.query).includes('text')) {
