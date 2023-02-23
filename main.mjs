@@ -14,8 +14,8 @@ function generateQRCode() {
 	const userData = messageInputBox.value;
 	const qrCodeSettings = {version, errorCorrectionLevel, mask: maskPattern};
 
-	const qrCodeMatrix = generate(userData, qrCodeSettings);
-	displayQRAsSVG(qrCodeMatrix, 'svg');
+	const qrCodeData = generate(userData, qrCodeSettings);
+	displayQRAsSVG(qrCodeData.matrix, 'svg');
 }
 
 document.querySelector('button').addEventListener('click', generateQRCode);
