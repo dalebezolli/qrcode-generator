@@ -14,5 +14,8 @@
   "license": "ISC",
   "devDependencies": {
     "rollup": "^3.17.2"
+  },
+  "dependencies": {
+    "canvas": "^2.11.0"
   }
 }
