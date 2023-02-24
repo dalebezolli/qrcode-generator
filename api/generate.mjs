@@ -2,6 +2,9 @@ import { generate } from '../lib/qrcode.mjs';
 import { createCanvas } from '@napi-rs/canvas';
 
 export default function helper(req, res) {
+    res.setHeader('Access-Control-Allow-Credentials', true)
+    res.setHeader('Access-Control-Allow-Origin', '*')
+
     if(!Object.keys(req.query).includes('text')) {
         return res.status(400).json({
             'status': 'not ok',
